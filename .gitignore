@@ -1,4 +1,5 @@
 inputs/*
 *.o
 CircuitRouter-SeqSolver
-
+lib/*.o
+CircuitRouter-SimpleShell
