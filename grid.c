@@ -226,24 +226,6 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
 
 
 /* =============================================================================
- * grid_print
- * =============================================================================
- */
-void grid_print (grid_t* gridPtr){
-    long x, y, z;
-    for (z=0; z < gridPtr->depth; z++) {
-        printf("[z = %ld]\n", z);
-        for (x=0; x<gridPtr->width; x++){
-            for(y=0; y<gridPtr->height; y++){
-                printf(" %ld", grid_getPoint(gridPtr, x,y,z));
-            }
-        printf("\n");
-        }
-        printf("\n");
-    }
-}
-
-/* =============================================================================
  * grid_print_to_file
  * =============================================================================
  */

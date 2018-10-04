@@ -373,7 +373,7 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
 }
 
 /* =============================================================================
- * maze_checkPaths
+ * fileManage
  * =============================================================================
  */
 

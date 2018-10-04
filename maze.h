@@ -99,6 +99,11 @@ long maze_read (maze_t* mazePtr, char* inputFile);
  * =============================================================================
  */
 bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathListPtr, bool_t doPrintPaths, char* inputFile);
+
+/* =============================================================================
+ * fileManage
+ * =============================================================================
+ */
 void fileManage(char* inputFile);
 
 #endif /* MAZE_H */
