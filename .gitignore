@@ -3,3 +3,4 @@ inputs/*
 CircuitRouter-SeqSolver
 lib/*.o
 CircuitRouter-SimpleShell
+.vscode/*

@@ -10,11 +10,30 @@
 typedef struct _process {
     int pid;
     int status;
-    double runtime;
 } process;
 
-process* process_alloc(int pid);
-void process_free(process* proc);
-void process_print(process* proc);
+/* =============================================================================
+ * process_alloc
+ * =============================================================================
+ */
+process* 
+process_alloc(int pid, int status);
+
+
+/* =============================================================================
+ * process_free
+ * =============================================================================
+ */
+void 
+process_free(process* proc);
+
+
+/* =============================================================================
+ * process_print
+ * =============================================================================
+ */
+void 
+process_print(process* proc);
+
 
 #endif //__PROCESS__

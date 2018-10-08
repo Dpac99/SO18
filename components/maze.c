@@ -57,12 +57,12 @@
 #include <string.h>
 #include "coordinate.h"
 #include "grid.h"
-#include "lib/list.h"
+#include "../lib/list.h"
 #include "maze.h"
-#include "lib/queue.h"
-#include "lib/pair.h"
-#include "lib/types.h"
-#include "lib/vector.h"
+#include "../lib/queue.h"
+#include "../lib/pair.h"
+#include "../lib/types.h"
+#include "../lib/vector.h"
 
 
 /* =============================================================================
@@ -146,7 +146,7 @@ static void addToGrid (grid_t* gridPtr, vector_t* vectorPtr, char* type){
  * =============================================================================
  */
 
-long maze_read (maze_t* mazePtr, char* inputFile){
+long maze_read (maze_t* mazePtr, char** inputFile){
     
     /*
      * Parse input from stdin
@@ -156,7 +156,7 @@ long maze_read (maze_t* mazePtr, char* inputFile){
     long width  = -1;
     long depth  = -1;
     char line[256];
-    FILE* fp = fopen(inputFile, "r");
+    FILE* fp = fopen(*inputFile, "r");
     list_t* workListPtr = list_alloc(&coordinate_comparePair);
     vector_t* wallVectorPtr = mazePtr->wallVectorPtr;
     vector_t* srcVectorPtr = mazePtr->srcVectorPtr;
@@ -248,7 +248,7 @@ long maze_read (maze_t* mazePtr, char* inputFile){
     addToGrid(gridPtr, srcVectorPtr,  "source");
     addToGrid(gridPtr, dstVectorPtr,  "destination");
     fileManage(inputFile);
-    fp = fopen(inputFile, "w");
+    fp = fopen(*inputFile, "w");
     fprintf(fp,"Maze dimensions = %li x %li x %li\n", width, height, depth);
     fprintf(fp,"Paths to route  = %li\n", list_getSize(workListPtr));
     fclose(fp);
@@ -377,16 +377,17 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
  * =============================================================================
  */
 
-void fileManage(char* inputFile){
+void fileManage(char** inputFile){
 
-    strcat(inputFile, ".res");
-    char* res = (char*)malloc(strlen(inputFile));
-    strcpy(res, inputFile);
-    char* old = (char*)malloc(strlen(res)+ 5*sizeof(char));
+    char* res = (char*)malloc(strlen(*inputFile) + 5);
+    strcpy(res, *inputFile);
+    strcat(res, ".res");
+    *inputFile = res;
+    char* old = (char*)malloc(strlen(res)+ 5);
     strcpy(old, res);
     strcat(old, ".old");
     rename(res, old);  // res is now .res.old
-    // printf("%s\n%s\n%s\n", inputFile, res, old);
+    free(old);
 }
 
 /* =============================================================================

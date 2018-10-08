@@ -55,11 +55,11 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "lib/list.h"
-#include "maze.h"
-#include "router.h"
-#include "lib/timer.h"
-#include "lib/types.h"
+#include "../lib/list.h"
+#include "../components/maze.h"
+#include "../components/router.h"
+#include "../lib/timer.h"
+#include "../lib/types.h"
 
 enum param_types {
     PARAM_BENDCOST = (unsigned char)'b',
@@ -167,7 +167,7 @@ int main(int argc, char** argv){
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
 
-    long numPathToRoute = maze_read(mazePtr, global_inputFile);
+    long numPathToRoute = maze_read(mazePtr, &global_inputFile);
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],
@@ -222,7 +222,7 @@ int main(int argc, char** argv){
         vector_free(pathVectorPtr);
     }
     list_free(pathVectorListPtr);
-
+    free(global_inputFile);
 
     exit(0);
 }

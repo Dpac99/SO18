@@ -55,9 +55,9 @@
 #include <stdlib.h>
 #include "coordinate.h"
 #include "grid.h"
-#include "lib/queue.h"
+#include "../lib/queue.h"
 #include "router.h"
-#include "lib/vector.h"
+#include "../lib/vector.h"
 
 
 typedef enum momentum {

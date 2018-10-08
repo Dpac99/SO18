@@ -45,131 +45,61 @@
  *
  * =============================================================================
  *
- * grid.h
+ * router.h
  *
  * =============================================================================
  */
 
 
-#ifndef GRID_H
-#define GRID_H 1
+#ifndef ROUTER_H
+#define ROUTER_H 1
 
 
-#include "lib/types.h"
-#include "lib/vector.h"
-#include <stdio.h>
+#include "grid.h"
+#include "maze.h"
+#include "../lib/vector.h"
 
+typedef struct router {
+    long xCost;
+    long yCost;
+    long zCost;
+    long bendCost;
+} router_t;
 
-typedef struct grid {
-    long width;
-    long height;
-    long depth;
-    long* points;
-    long* points_unaligned;
-} grid_t;
-
-enum {
-    GRID_POINT_FULL  = -2L,
-    GRID_POINT_EMPTY = -1L
-};
-
-
-/* =============================================================================
- * grid_alloc
- * =============================================================================
- */
-grid_t* grid_alloc (long width, long height, long depth);
+typedef struct router_solve_arg {
+    router_t* routerPtr;
+    maze_t* mazePtr;
+    list_t* pathVectorListPtr;
+} router_solve_arg_t;
 
 
 /* =============================================================================
- * grid_free
+ * router_alloc
  * =============================================================================
  */
-void grid_free (grid_t* gridPtr);
+router_t* router_alloc (long xCost, long yCost, long zCost, long bendCost);
 
 
 /* =============================================================================
- * grid_copy
+ * router_free
  * =============================================================================
  */
-void grid_copy (grid_t* dstGridPtr, grid_t* srcGridPtr);
+void router_free (router_t* routerPtr);
 
 
 /* =============================================================================
- * grid_isPointValid
+ * router_solve
  * =============================================================================
  */
-bool_t grid_isPointValid (grid_t* gridPtr, long x, long y, long z);
+void router_solve (void* argPtr);
 
 
-/* =============================================================================
- * grid_getPointRef
- * =============================================================================
- */
-long* grid_getPointRef (grid_t* gridPtr, long x, long y, long z);
-
-
-/* =============================================================================
- * grid_getPointIndices
- * =============================================================================
- */
-void grid_getPointIndices (grid_t* gridPtr, long* gridPointPtr, long* xPtr, long* yPtr, long* zPtr);
-
-
-/* =============================================================================
- * grid_getPoint
- * =============================================================================
- */
-long grid_getPoint (grid_t* gridPtr, long x, long y, long z);
-
-
-/* =============================================================================
- * grid_isPointEmpty
- * =============================================================================
- */
-bool_t grid_isPointEmpty (grid_t* gridPtr, long x, long y, long z);
-
-
-/* =============================================================================
- * grid_isPointFull
- * =============================================================================
- */
-bool_t grid_isPointFull (grid_t* gridPtr, long x, long y, long z);
-
-
-/* =============================================================================
- * grid_setPoint
- * =============================================================================
- */
-void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value);
-
-
-/* =============================================================================
- * grid_addPath
- * =============================================================================
- */
-void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr);
-
-
-/* =============================================================================
- * grid_addPath_Ptr
- * =============================================================================
- */
-void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr);
-
-
-/* =============================================================================
- * grid_print_to_file
- * =============================================================================
- */
-void grid_print_to_file(grid_t* gridPtr, FILE* f);
-
-#endif /* GRID_H */
+#endif /* ROUTER_H */
 
 
 /* =============================================================================
  *
- * End of grid.c
+ * End of router.h
  *
  * =============================================================================
  */

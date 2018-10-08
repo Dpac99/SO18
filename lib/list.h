@@ -93,7 +93,7 @@ typedef struct list {
     list_node_t head;
     long (*compare)(const void*, const void*);   /* returns {-1,0,1}, 0 -> equal */
     long size;
-} list_t;
+} list_t; 
 
 
 /* =============================================================================

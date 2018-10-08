@@ -45,73 +45,67 @@
  *
  * =============================================================================
  *
- * maze.h
+ * coordinate.h
  *
  * =============================================================================
  */
 
 
-#ifndef MAZE_H
-#define MAZE_H 1
+#ifndef COORDINATE_H
+#define COORDINATE_H 1
 
 
-#include "coordinate.h"
-#include "grid.h"
-#include "lib/list.h"
-#include "lib/pair.h"
-#include "lib/queue.h"
-#include "lib/types.h"
-#include "lib/vector.h"
+#include "../lib/types.h"
 
-typedef struct maze {
-    grid_t* gridPtr;
-    queue_t* workQueuePtr;   /* contains source/destination pairs to route */
-    vector_t* wallVectorPtr; /* obstacles */
-    vector_t* srcVectorPtr;  /* sources */
-    vector_t* dstVectorPtr;  /* destinations */
-} maze_t;
+typedef struct coordinate {
+    long x;
+    long y;
+    long z;
+} coordinate_t;
 
 
 /* =============================================================================
- * maze_alloc
+ * coordinate_alloc
  * =============================================================================
  */
-maze_t* maze_alloc ();
+coordinate_t* coordinate_alloc (long x, long y, long z);
 
 
 /* =============================================================================
- * maze_free
+ * coordinate_free
  * =============================================================================
  */
-void maze_free (maze_t* mazePtr);
+void coordinate_free (coordinate_t* coordinatePtr);
 
 
 /* =============================================================================
- * maze_read
- * -- Return number of path to route
+ * coordinate_isEqual
  * =============================================================================
  */
-long maze_read (maze_t* mazePtr, char* inputFile);
+bool_t coordinate_isEqual (coordinate_t* aPtr, coordinate_t* bPtr);
 
 
 /* =============================================================================
- * maze_checkPaths
+ * coordinate_comparePair
+ * -- For sorting in list of source/destination pairs
  * =============================================================================
  */
-bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathListPtr, bool_t doPrintPaths, char* inputFile);
+long coordinate_comparePair (const void* aPtr, const void* bPtr);
+
 
 /* =============================================================================
- * fileManage
+ * coordinate_areAdjacent
  * =============================================================================
  */
-void fileManage(char* inputFile);
+bool_t coordinate_areAdjacent (coordinate_t* aPtr, coordinate_t* bPtr);
 
-#endif /* MAZE_H */
+
+#endif /* COORDINATE_H */
 
 
 /* =============================================================================
  *
- * End of maze.h
+ * End of coordinate.h
  *
  * =============================================================================
  */
