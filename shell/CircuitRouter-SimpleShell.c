@@ -32,7 +32,7 @@ int main(int argc, char** argv){
     process* proc;
 
     if(argc > 1){
-        if (argc > 2){ printf("ERROR: Too many arguments"); exit(0);}
+        if (argc > 2){ printf("ERROR: Too many arguments\n"); exit(0);}
         max = strtol(argv[1], NULL, 10);
         if(!max){max=-1;}
         //printf("max = %d\n",max); 
