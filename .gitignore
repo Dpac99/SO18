@@ -3,3 +3,5 @@ solver/CircuitRouter-SeqSolver
 lib/*.o
 shell/CircuitRouter-SimpleShell
 .vscode/*
+inputs/*.res
+inputs/*.res.old
