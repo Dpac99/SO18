@@ -88,12 +88,10 @@ static void displayUsage (const char* appName){
     printf("Usage: %s [options]\n", appName);
     puts("\nOptions:                            (defaults)\n");
     printf("    b <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
-    printf("    p          [p]rint routed maze  (false)\n");
     printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
     printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
     printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
     printf("    h          [h]elp message       (false)\n");
-    printf("    Opterr:      [%d]\n", opterr);
     exit(1);
 }
 
@@ -118,7 +116,7 @@ static void parseArgs (long argc, char* const argv[]){
     long i;
     long opt;
 
-    opterr = 0; // gap for filename
+    opterr = 0; 
 
     setDefaultParams();
 
@@ -130,9 +128,6 @@ static void parseArgs (long argc, char* const argv[]){
             case 'z':
                 global_params[(unsigned char)opt] = atol(optarg);
                 break;
-           /* case 'p':
-                global_doPrint = TRUE;
-                break; */
             case '?':
             case 'h':
             default:
@@ -141,9 +136,14 @@ static void parseArgs (long argc, char* const argv[]){
         }   
     }
 
-    for (i = optind+1 ; i < argc; i++) {
+    for (i = optind+1 ; i < argc; i++) { 
         fprintf(stderr, "Non-option argument: %s\n", argv[i]);
         opterr++;
+    }
+
+    if(argv[optind] == NULL){
+        printf("\nWARNING: Requires an input file\n\n");
+        displayUsage(argv[0]);
     }
 
     global_inputFile = argv[optind];

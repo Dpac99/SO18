@@ -1,6 +1,5 @@
-inputs/*
 *.o
-CircuitRouter-SeqSolver
+solver/CircuitRouter-SeqSolver
 lib/*.o
-CircuitRouter-SimpleShell
+shell/CircuitRouter-SimpleShell
 .vscode/*
