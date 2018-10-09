@@ -72,6 +72,9 @@ int main(int argc, char** argv){
         else if (eq(args[0], "exit")){
             while(current > 0){
                 finished = wait(&status);
+                while(finished == -1){
+                    finished = wait(&status);
+                }
                 process* new = process_alloc(finished,status);
                 list_insert(dead_process, new);
                 current--;
