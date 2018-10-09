@@ -31,4 +31,4 @@ vector.o: ../lib/vector.c ../lib/vector.h ../lib/types.h ../lib/utility.h
 		gcc $(CFLAGS) -c vector.c -o vector.o
 
 clean: 
-		rm -f *.o ../components/*.o ../lib/*.o CircuitRouter-SeqSolver 
+		rm -f *.o ../components/*.o ../lib/*.o CircuitRouter-SeqSolver ../inputs/*.res ../inputs/*.old

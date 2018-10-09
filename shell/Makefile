@@ -4,9 +4,6 @@ CircuitRouter-SimpleShell:  ../lib/process.o ../lib/commandlinereader.o CircuitR
 		make -C ../solver
 		gcc $(CFLAGS) ../lib/list.o ../lib/process.o ../lib/commandlinereader.o CircuitRouter-SimpleShell.o -lm -o CircuitRouter-SimpleShell
 
-Makefile:
-		make
-
 CircuitRouter-SimpleShell.o: CircuitRouter-SimpleShell.c  ../lib/list.h ../lib/commandlinereader.h ../lib/process.h
 		gcc $(CFLAGS) -c CircuitRouter-SimpleShell.c -o CircuitRouter-SimpleShell.o
 
