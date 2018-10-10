@@ -1,5 +1,6 @@
 CFLAGS=  -Wall -std=gnu99
 
+
 CircuitRouter-SimpleShell:  ../lib/process.o ../lib/commandlinereader.o CircuitRouter-SimpleShell.o
 		make -C ../solver
 		gcc $(CFLAGS) ../lib/list.o ../lib/process.o ../lib/commandlinereader.o CircuitRouter-SimpleShell.o -lm -o CircuitRouter-SimpleShell

@@ -11,12 +11,23 @@
 #define MAXARGS 4
 #define eq(A,B) (!strcmp(A,B))
 
+
+/* =============================================================================
+ * child_process
+ *  -- Handles child processes
+ * =============================================================================
+ */
 void child_process(char** args){
     execv("../solver/CircuitRouter-SeqSolver", args);
-    printf("ERROR: error with child process");
+    printf("ERROR: error with child process\n");
     exit(-1);
 }
 
+
+/* =============================================================================
+ * main
+ * =============================================================================
+ */
 int main(int argc, char** argv){
     
     list_t* dead_process = list_alloc(NULL);
@@ -35,7 +46,6 @@ int main(int argc, char** argv){
         if (argc > 2){ printf("ERROR: Too many arguments\n"); exit(0);}
         max = strtol(argv[1], NULL, 10);
         if(!max){max=-1;}
-        //printf("max = %d\n",max); 
     }
 
     while(1){
@@ -57,7 +67,7 @@ int main(int argc, char** argv){
             int pid = fork();
             
             if( pid < 0){
-                printf("Unable to fork");
+                printf("ERROR: Unable to fork\n");
                 continue;
             }
 
