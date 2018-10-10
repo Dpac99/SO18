@@ -1,6 +1,6 @@
 CFLAGS=  -Wall -std=gnu99
 
-CircuitRouter-SeqSolver: ../components/coordinate.o ../components/grid.o CircuitRouter-SeqSolver.o ../components/maze.o ../components/router.o ../lib/list.o ../lib/list.o ../lib/pair.o ../lib/queue.o ../lib/vector.o
+CircuitRouter-SeqSolver: ../components/coordinate.o ../components/grid.o CircuitRouter-SeqSolver.o ../components/maze.o ../components/router.o ../lib/list.o  ../lib/pair.o ../lib/queue.o ../lib/vector.o
 		gcc $(CFLAGS) ../components/coordinate.o ../components/grid.o CircuitRouter-SeqSolver.o ../components/maze.o ../components/router.o ../lib/list.o ../lib/pair.o ../lib/queue.o ../lib/vector.o -lm -o CircuitRouter-SeqSolver
 
 coordinate.o: ../components/coordinate.c ../components/coordinate.h ../lib/pair.h ../lib/types.h
