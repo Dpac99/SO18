@@ -45,7 +45,6 @@ int main(int argc, char** argv){
     if(argc > 1){
         if (argc > 2){ printf("ERROR: Too many arguments\n"); exit(0);}
         max = strtol(argv[1], NULL, 10);
-        printf("%d\n", max);
         if(!max){max=-1;}
     }
 

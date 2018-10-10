@@ -4,3 +4,4 @@ shell/CircuitRouter-SimpleShell
 .vscode/*
 inputs/*.res
 inputs/*.res.old
+inputs/teste.*
