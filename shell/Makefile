@@ -1,3 +1,6 @@
+#This Makefile compiles the Solver as well.
+#Always run the shell from this directory.
+
 CFLAGS=  -Wall -std=gnu99
 
 

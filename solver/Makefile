@@ -1,3 +1,5 @@
+#This makefile compiles only what is necessary for the solver, not the shell.
+
 CFLAGS=  -Wall -std=gnu99
 
 CircuitRouter-SeqSolver: ../components/coordinate.o ../components/grid.o CircuitRouter-SeqSolver.o ../components/maze.o ../components/router.o ../lib/list.o  ../lib/pair.o ../lib/queue.o ../lib/vector.o
@@ -31,4 +33,4 @@ vector.o: ../lib/vector.c ../lib/vector.h ../lib/types.h ../lib/utility.h
 		gcc $(CFLAGS) -c vector.c -o vector.o
 
 clean: 
-		rm -f *.o ../components/*.o ../lib/*.o CircuitRouter-SeqSolver ../inputs/*.res ../inputs/*.old
+		rm -f *.o ../components/*.o ../lib/*.o CircuitRouter-SeqSolver
