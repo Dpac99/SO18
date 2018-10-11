@@ -36,7 +36,7 @@ int main(int argc, char** argv){
     int current = 0;
     char buff [BUFFSIZE];
     char* args[MAXARGS];
-    int status;
+    int status, spinid;
     int finished;
     list_iter_t iter;
     int n_args;
@@ -51,16 +51,21 @@ int main(int argc, char** argv){
     while(1){
         n_args = readLineArguments(args, MAXARGS, buff, BUFFSIZE);
         if(n_args > 2){
-            printf("ERROR: Too many arguments");
+            printf("ERROR: Too many arguments\n");
             continue;
         }
         else if( eq(args[0], "run")){
 
             if(current == max){
+                fputs("waiting...\n", stdout);
+                spinid = fork();
+                if(spinid == 0) execl("./spin.sh", "spin.sh", NULL);
                 finished = wait(&status);
+                kill(spinid,1);
                 process* new = process_alloc(finished,status);
                 list_insert(dead_process, new);
                 current--;
+                printf("Done!\n");
             }
 
             args[0] = "CircuitRouter-SeqSolver";
