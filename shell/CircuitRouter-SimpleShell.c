@@ -36,7 +36,7 @@ int main(int argc, char** argv){
     int current = 0;
     char buff [BUFFSIZE];
     char* args[MAXARGS];
-    int status, spinid;
+    int status;
     int finished;
     list_iter_t iter;
     int n_args;
@@ -50,26 +50,26 @@ int main(int argc, char** argv){
 
     while(1){
         n_args = readLineArguments(args, MAXARGS, buff, BUFFSIZE);
-        if(n_args > 2){
+
+        if(n_args == 0){                    //If the user presses enter
+            continue;
+        }
+
+        else if(n_args > 2){                //Can't have more than 2 arguments
             printf("ERROR: Too many arguments\n");
             continue;
         }
         else if( eq(args[0], "run")){
 
             if(current == max){
-                fputs("waiting...\n", stdout);
-                spinid = fork();
-                if(spinid == 0) execl("./spin.sh", "spin.sh", NULL);
                 finished = wait(&status);
-                kill(spinid,1);
                 process* new = process_alloc(finished,status);
                 list_insert(dead_process, new);
                 current--;
-                printf("Done!\n");
             }
 
-            args[0] = "CircuitRouter-SeqSolver";
-            int pid = fork();
+            args[0] = "CircuitRouter-SeqSolver";        //By default, argv[0]
+            int pid = fork();                                       //  of every program is the program name. Not necessary
             
             if( pid < 0){
                 printf("ERROR: Unable to fork\n");
@@ -85,9 +85,9 @@ int main(int argc, char** argv){
             }
         }
         else if (eq(args[0], "exit")){
-            while(current > 0){
+            while(current > 0){                 //waiting for every process still running
                 finished = wait(&status);
-                while(finished == -1){
+                while(finished == -1){        //In case wait returns an error
                     finished = wait(&status);
                 }
                 process* new = process_alloc(finished,status);
