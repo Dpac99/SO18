@@ -69,7 +69,7 @@ int main(int argc, char** argv){
             }
 
             args[0] = "CircuitRouter-SeqSolver";        //By default, argv[0]
-            int pid = fork();                                       //  of every program is the program name. Not necessary
+            int pid = fork();                                       //  of every program is the program name. Not necessary, but good practice
             
             if( pid < 0){
                 printf("ERROR: Unable to fork\n");

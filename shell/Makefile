@@ -1,7 +1,7 @@
 #This Makefile compiles the Solver as well.
 #Always run the shell from this directory.
 
-CFLAGS=  -Wall -std=gnu99
+CFLAGS= -g -Wall -std=gnu99
 
 
 CircuitRouter-SimpleShell:  ../lib/process.o ../lib/commandlinereader.o CircuitRouter-SimpleShell.o
