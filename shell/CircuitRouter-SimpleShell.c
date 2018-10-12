@@ -1,3 +1,7 @@
+/*Diogo Pacheco n 89433
+  Pedro Elias n 89519
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
