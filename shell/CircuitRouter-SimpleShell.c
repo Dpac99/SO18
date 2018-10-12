@@ -62,7 +62,9 @@ int main(int argc, char** argv){
         else if( eq(args[0], "run")){
 
             if(current == max){
+                printf("Waiting...\n");
                 finished = wait(&status);
+                printf("Done!\n");
                 process* new = process_alloc(finished,status);
                 list_insert(dead_process, new);
                 current--;
