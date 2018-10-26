@@ -293,6 +293,7 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
  * =============================================================================
  */
 void router_solve (void* argPtr){
+    //Have a mutex for this function?
 
     router_solve_arg_t* routerArgPtr = (router_solve_arg_t*)argPtr;
     router_t* routerPtr = routerArgPtr->routerPtr;

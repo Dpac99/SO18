@@ -51,14 +51,17 @@
  */
 
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 #include <getopt.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <pthread.h>
 #include "../lib/list.h"
-#include "../components/maze.h"
-#include "../components/router.h"
+#include "../CircuitRouter-SeqSolver/maze.h"
+#include "../CircuitRouter-SeqSolver/router.h"
 #include "../lib/timer.h"
 #include "../lib/types.h"
 
@@ -78,7 +81,7 @@ enum param_defaults {
     PARAM_DEFAULT_THREADS = -1,
 };
 
-bool_t global_doPrint = FALSE;
+bool_t global_doPrint = TRUE;
 char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
 pthread_t *global_threads;
@@ -89,13 +92,13 @@ pthread_t *global_threads;
  * =============================================================================
  */
 static void displayUsage (const char* appName){
-    printf("Usage: %s [options]\n", appName);
+    printf("Usage: %s [options] input_filename\n", appName);
     puts("\nOptions:                            (defaults)\n");
     printf("    b <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
     printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
     printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
     printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
-    printf("    t <UINT>   [t]hread number        (mandatory)\n");
+    printf("    t <UINT>   [t] number of threads    (Mandatory)\n");
     printf("    h          [h]elp message       (false)\n");
     exit(1);
 }
@@ -119,14 +122,13 @@ static void setDefaultParams (){
  * =============================================================================
  */
 static void parseArgs (long argc, char* const argv[]){
-    long i;
     long opt;
 
-    opterr = 0; 
+    opterr = 0;
 
     setDefaultParams();
 
-    while ((opt = getopt(argc, argv, "tb:x:y:z:")) != -1) {
+    while ((opt = getopt(argc, argv, "t:hb:x:y:z:")) != -1) {
         switch (opt) {
             case 'b':
             case 'x':
@@ -137,35 +139,49 @@ static void parseArgs (long argc, char* const argv[]){
                 break;
             case '?':
             case 'h':
+                displayUsage(argv[0]);
             default:
-                opterr++;
-                break;
-        }   
-    }
-
-    for (i = optind+1 ; i < argc; i++) { 
-        fprintf(stderr, "Non-option argument: %s\n", argv[i]);
-        opterr++;
-    }
-
-    if(global_params[(unsigned char)'t'] == -1){
-        printf("WARNING: Requires thread number");
-        displayUsage(argv[0]);
-    }
-
-    if(argc >=optind){
-        if(argv[optind] == NULL){
-        printf("\nWARNING: Requires an input file\n\n");
-        displayUsage(argv[0]);
+                break;  
         }
     }
-    
-    global_inputFile = argv[optind];
 
-    if (opterr) {
+    if (optind >= argc) {
+        fprintf(stderr, "Missing input file\n");
         displayUsage(argv[0]);
     }
-    
+
+    global_inputFile = argv[optind];
+
+    if(PARAM_THREADS == -1){
+        fprintf(stderr, "Missing number of threads\n");
+        displayUsage(argv[0]);
+    }
+}
+
+/* =============================================================================
+ * outputFile
+ * =============================================================================
+ */
+FILE * outputFile() {
+    FILE *fp;
+
+    char result_outputFile[strlen(global_inputFile) + strlen(".res") + 1];
+    sprintf(result_outputFile, "%s.res", global_inputFile);
+
+    if (access(result_outputFile, F_OK) == 0) {
+        char old_outputFile[strlen(global_inputFile) + strlen(".res.old") + 1];
+        sprintf(old_outputFile, "%s.res.old", global_inputFile);
+        if (rename(result_outputFile, old_outputFile) == -1) {
+            perror("Error renaming output file");
+            exit(EXIT_FAILURE);;
+        }
+    }
+    fp = fopen(result_outputFile, "wt");
+    if (fp == NULL) {
+        perror("Error opening output file");
+        exit(EXIT_FAILURE);
+    }
+    return fp;
 }
 
 
@@ -177,12 +193,12 @@ int main(int argc, char** argv){
     /*
      * Initialization
      */
-    parseArgs(argc, (char** const)argv);
+    parseArgs(argc, argv);
+    global_threads = (pthread_t*)malloc(sizeof(pthread_t) * PARAM_THREADS);
+    FILE* resultFp = outputFile();
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
-    global_threads = (pthread_t*)malloc(sizeof(pthread_t)* global_params[(unsigned char)'t']);
-
-    long numPathToRoute = maze_read(mazePtr, &global_inputFile);
+    long numPathToRoute = maze_read(mazePtr, global_inputFile, resultFp);
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],
@@ -193,9 +209,9 @@ int main(int argc, char** argv){
 
     router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr};
     TIMER_T startTime;
-    TIMER_READ(startTime); //TODO: Add threads
+    TIMER_READ(startTime);
 
-    router_solve((void *)&routerArg);
+    router_solve((void *)&routerArg); //Maybe have each thread call this function?
 
     TIMER_T stopTime;
     TIMER_READ(stopTime);
@@ -206,22 +222,18 @@ int main(int argc, char** argv){
     while (list_iter_hasNext(&it, pathVectorListPtr)) {
         vector_t* pathVectorPtr = (vector_t*)list_iter_next(&it, pathVectorListPtr);
         numPathRouted += vector_getSize(pathVectorPtr);
-	}
-    FILE* fp = fopen(global_inputFile, "a");
-    fprintf(fp,"Paths routed    = %li\n", numPathRouted);
-    fprintf(fp,"Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
-    fclose(fp);
+    }
+    fprintf(resultFp, "Paths routed    = %li\n", numPathRouted);
+    fprintf(resultFp, "Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
 
 
     /*
      * Check solution and clean up
      */
     assert(numPathRouted <= numPathToRoute);
-    bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, global_doPrint, global_inputFile);
+    bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, resultFp, global_doPrint);
     assert(status == TRUE);
-    fp = fopen(global_inputFile, "a");
-    fputs("Verification passed.", fp);
-    fclose(fp);
+    fputs("Verification passed.\n",resultFp);
 
     maze_free(mazePtr);
     router_free(routerPtr);
@@ -237,9 +249,8 @@ int main(int argc, char** argv){
         vector_free(pathVectorPtr);
     }
     list_free(pathVectorListPtr);
-    free(global_inputFile);
-    free(global_threads);
 
+    fclose(resultFp);
     exit(0);
 }
 
@@ -250,5 +261,3 @@ int main(int argc, char** argv){
  *
  * =============================================================================
  */
-
-
