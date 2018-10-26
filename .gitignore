@@ -6,3 +6,4 @@ inputs/*.res
 inputs/*.res.old
 inputs/teste.*
 inputs/bigtest.*
+*.zip

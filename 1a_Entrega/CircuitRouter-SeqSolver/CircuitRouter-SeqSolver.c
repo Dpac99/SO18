@@ -141,9 +141,11 @@ static void parseArgs (long argc, char* const argv[]){
         opterr++;
     }
 
-    if(argv[optind] == NULL){
+    if(argc >= optind) {
+        if(argv[optind] == NULL){
         printf("\nWARNING: Requires an input file\n\n");
         displayUsage(argv[0]);
+        }
     }
 
     global_inputFile = argv[optind];
