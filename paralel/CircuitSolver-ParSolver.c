@@ -55,6 +55,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "../lib/list.h"
 #include "../components/maze.h"
 #include "../components/router.h"
@@ -66,6 +67,7 @@ enum param_types {
     PARAM_XCOST    = (unsigned char)'x',
     PARAM_YCOST    = (unsigned char)'y',
     PARAM_ZCOST    = (unsigned char)'z',
+    PARAM_THREADS = (unsigned char)'t',
 };
 
 enum param_defaults {
@@ -73,11 +75,13 @@ enum param_defaults {
     PARAM_DEFAULT_XCOST    = 1,
     PARAM_DEFAULT_YCOST    = 1,
     PARAM_DEFAULT_ZCOST    = 2,
+    PARAM_DEFAULT_THREADS = -1,
 };
 
 bool_t global_doPrint = FALSE;
 char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
+pthread_t *global_threads;
 
 
 /* =============================================================================
@@ -91,6 +95,7 @@ static void displayUsage (const char* appName){
     printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
     printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
     printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
+    printf("    t <UINT>   [t]hread number        (mandatory)\n");
     printf("    h          [h]elp message       (false)\n");
     exit(1);
 }
@@ -105,6 +110,7 @@ static void setDefaultParams (){
     global_params[PARAM_XCOST]    = PARAM_DEFAULT_XCOST;
     global_params[PARAM_YCOST]    = PARAM_DEFAULT_YCOST;
     global_params[PARAM_ZCOST]    = PARAM_DEFAULT_ZCOST;
+    global_params[PARAM_THREADS] = PARAM_DEFAULT_THREADS;
 }
 
 
@@ -120,11 +126,12 @@ static void parseArgs (long argc, char* const argv[]){
 
     setDefaultParams();
 
-    while ((opt = getopt(argc, argv, "b:x:y:z:")) != -1) {
+    while ((opt = getopt(argc, argv, "tb:x:y:z:")) != -1) {
         switch (opt) {
             case 'b':
             case 'x':
             case 'y':
+            case 't':
             case 'z':
                 global_params[(unsigned char)opt] = atol(optarg);
                 break;
@@ -141,13 +148,18 @@ static void parseArgs (long argc, char* const argv[]){
         opterr++;
     }
 
-    if(argc >= optind) {
+    if(global_params[(unsigned char)'t'] == -1){
+        printf("WARNING: Requires thread number");
+        displayUsage(argv[0]);
+    }
+
+    if(argc >=optind){
         if(argv[optind] == NULL){
         printf("\nWARNING: Requires an input file\n\n");
         displayUsage(argv[0]);
         }
     }
-
+    
     global_inputFile = argv[optind];
 
     if (opterr) {
@@ -168,6 +180,7 @@ int main(int argc, char** argv){
     parseArgs(argc, (char** const)argv);
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
+    global_threads = (pthread_t*)malloc(sizeof(pthread_t)* global_params[(unsigned char)'t']);
 
     long numPathToRoute = maze_read(mazePtr, &global_inputFile);
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
@@ -180,7 +193,7 @@ int main(int argc, char** argv){
 
     router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr};
     TIMER_T startTime;
-    TIMER_READ(startTime);
+    TIMER_READ(startTime); //TODO: Add threads
 
     router_solve((void *)&routerArg);
 
@@ -225,6 +238,7 @@ int main(int argc, char** argv){
     }
     list_free(pathVectorListPtr);
     free(global_inputFile);
+    free(global_threads);
 
     exit(0);
 }
@@ -236,3 +250,5 @@ int main(int argc, char** argv){
  *
  * =============================================================================
  */
+
+

@@ -113,6 +113,12 @@ int main(int argc, char** argv){
             list_free(dead_process);
             exit(0);
         }
+        else if(eq(args[0], "limit")){
+            int curr_pid = getpid();
+            printf("Shell process id: %d\n", curr_pid);
+            printf("Remaning process slots: %d\n", (max != -1)? max-current : max);
+        }
+        
         else{
             printf("ERROR: Unknown command\n");
             continue;
