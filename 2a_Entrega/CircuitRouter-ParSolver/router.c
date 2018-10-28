@@ -53,6 +53,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/queue.h"
@@ -292,7 +293,7 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
  * router_solve
  * =============================================================================
  */
-void router_solve (void* argPtr){
+void* router_solve (void* argPtr){
 
     router_solve_arg_t* routerArgPtr = (router_solve_arg_t*)argPtr;
     router_t* routerPtr = routerArgPtr->routerPtr;
@@ -357,6 +358,7 @@ void router_solve (void* argPtr){
 
     grid_free(myGridPtr);
     queue_free(myExpansionQueuePtr);
+    return NULL;
 }
 
 

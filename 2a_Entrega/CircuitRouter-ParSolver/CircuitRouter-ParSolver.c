@@ -152,7 +152,7 @@ static void parseArgs (long argc, char* const argv[]){
 
     global_inputFile = argv[optind];
 
-    if(PARAM_THREADS == -1){
+    if(global_params[PARAM_THREADS] == -1){
         fprintf(stderr, "Missing number of threads\n");
         displayUsage(argv[0]);
     }
@@ -184,6 +184,18 @@ FILE * outputFile() {
     return fp;
 }
 
+/* =============================================================================
+ * create_threads
+ * =============================================================================
+ */
+void create_threads(router_solve_arg_t* router_args){
+    for(int i = 0; i<global_params[PARAM_THREADS]; i++){
+        if(pthread_create(&global_threads[i], 0, router_solve, (void*) router_args) != 0){
+            fprintf(stderr, "Error creating thread");
+            exit(1);
+        }
+    }
+}
 
 /* =============================================================================
  * main
@@ -194,7 +206,7 @@ int main(int argc, char** argv){
      * Initialization
      */
     parseArgs(argc, argv);
-    global_threads = (pthread_t*)malloc(sizeof(pthread_t) * PARAM_THREADS);
+    global_threads = (pthread_t*)malloc(sizeof(pthread_t) *global_params[PARAM_THREADS]);
     FILE* resultFp = outputFile();
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
@@ -211,7 +223,13 @@ int main(int argc, char** argv){
     TIMER_T startTime;
     TIMER_READ(startTime);
 
-    router_solve((void *)&routerArg); //Maybe have each thread call this function?
+    create_threads(&routerArg);   //router_solve((void *)&routerArg);
+    for(int i = 0; i<global_params[PARAM_THREADS]; i++){
+        if(pthread_join(global_threads[i], NULL) != 0){
+            fprintf(stderr, "Error joining threads\n");
+            exit(1);
+        };
+    }
 
     TIMER_T stopTime;
     TIMER_READ(stopTime);
