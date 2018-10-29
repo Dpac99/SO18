@@ -86,6 +86,9 @@ point_t MOVE_NEGX = {-1,  0,  0,  0, MOMENTUM_NEGX};
 point_t MOVE_NEGY = { 0, -1,  0,  0, MOMENTUM_NEGY};
 point_t MOVE_NEGZ = { 0,  0, -1,  0, MOMENTUM_NEGZ};
 
+pthread_mutex_t grid_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t queue_lock =PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* =============================================================================
  * router_alloc
@@ -315,14 +318,17 @@ void* router_solve (void* argPtr){
     while (1) {
 
         pair_t* coordinatePairPtr;
+        pthread_mutex_lock(&queue_lock);
         if (queue_isEmpty(workQueuePtr)) {
             coordinatePairPtr = NULL;
         } else {
             coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
         }
+        pthread_mutex_unlock(&queue_lock);
         if (coordinatePairPtr == NULL) {
             break;
         }
+        
 
         coordinate_t* srcPtr = coordinatePairPtr->firstPtr;
         coordinate_t* dstPtr = coordinatePairPtr->secondPtr;
@@ -332,6 +338,7 @@ void* router_solve (void* argPtr){
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
 
+        pthread_mutex_lock(&grid_lock);
         grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
         if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
                          srcPtr, dstPtr)) {
@@ -342,6 +349,7 @@ void* router_solve (void* argPtr){
                 success = TRUE;
             }
         }
+        pthread_mutex_unlock(&grid_lock);
 
         if (success) {
             bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
@@ -353,8 +361,10 @@ void* router_solve (void* argPtr){
     /*
      * Add my paths to global list
      */
+    pthread_mutex_lock(&list_lock);
     list_t* pathVectorListPtr = routerArgPtr->pathVectorListPtr;
     list_insert(pathVectorListPtr, (void*)myPathVectorPtr);
+    pthread_mutex_unlock(&list_lock);
 
     grid_free(myGridPtr);
     queue_free(myExpansionQueuePtr);

@@ -2,9 +2,6 @@
 
 TIMEFORMAT=%R #Time now returns only the real time
 
-cd ../CircuitRouter-SeqSolver
-make > /dev/null
-cd ../CircuitRouter-ParSolver
 
 #Filename handling and generating output filename
 filename=$(basename $2)
@@ -22,6 +19,7 @@ echo "1S,$seqtime,1" >> $output
 
 #Testing all thread numbers
 for i in $(seq 1 $1); do
+    ./CircuitRouter-ParSolver -t $1 $input >/dev/null 
     partime=$(cut -c 19-27 <(grep "Elapsed" $exectime))
     speedup=$(echo "scale=6; ${seqtime}/${partime}" | bc)
     echo "$i,$partime,$speedup" >> $output

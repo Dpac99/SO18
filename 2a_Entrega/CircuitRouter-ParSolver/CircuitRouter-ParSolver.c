@@ -190,7 +190,7 @@ FILE * outputFile() {
  */
 void create_threads(router_solve_arg_t* router_args){
     for(int i = 0; i<global_params[PARAM_THREADS]; i++){
-        if(pthread_create(&global_threads[i], 0, router_solve, (void*) router_args) != 0){
+        if(pthread_create(&global_threads[i], 0, (void*)router_solve, (void*)router_args) != 0){
             fprintf(stderr, "Error creating thread");
             exit(1);
         }
@@ -243,6 +243,7 @@ int main(int argc, char** argv){
     }
     fprintf(resultFp, "Paths routed    = %li\n", numPathRouted);
     fprintf(resultFp, "Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
+    fprintf(resultFp, "Number of threads = %li\n", global_params[PARAM_THREADS]);
 
 
     /*
