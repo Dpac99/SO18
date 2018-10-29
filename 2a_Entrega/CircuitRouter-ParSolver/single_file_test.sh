@@ -14,4 +14,4 @@ percentage=$(echo "scale=2; ${success}*100/${total}" | bc)
 echo errors: $errcnt
 echo sucesses: $success
 echo percentage: ${percentage}%
-paplay ~/stuff/Yeet\ \(Sound\ Effect\).wav
+#paplay ~/stuff/Yeet\ \(Sound\ Effect\).wav
