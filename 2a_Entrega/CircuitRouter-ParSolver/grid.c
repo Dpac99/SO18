@@ -102,7 +102,7 @@ void grid_free (grid_t* gridPtr){
 
 
 /* =============================================================================
- * grid_copy
+ * grid_copy -- Try to lock every point in the grid and lock the memcpy?
  * =============================================================================
  */
 void grid_copy (grid_t* dstGridPtr, grid_t* srcGridPtr){
@@ -213,7 +213,7 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
 
 
 /* =============================================================================
- * grid_addPath_Ptr
+ * grid_addPath_Ptr -- Test lock for every point in path?
  * =============================================================================
  */
 void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){

@@ -1,8 +1,5 @@
 #!/bin/bash
 
-TIMEFORMAT=%R #Time now returns only the real time
-
-
 #Filename handling and generating output filename
 filename=$(basename $2)
 output="../results/"$filename".speedups.csv"
@@ -17,7 +14,7 @@ seqtime=$(cut -c 19-27 <(grep "Elapsed" $exectime))
 
 echo "1S,$seqtime,1" >> $output
 
-#Testing all thread numbers
+#Testing with all threads from 1 to $1
 for i in $(seq 1 $1); do
     ./CircuitRouter-ParSolver -t $1 $input >/dev/null 
     partime=$(cut -c 19-27 <(grep "Elapsed" $exectime))

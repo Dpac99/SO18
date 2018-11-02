@@ -141,7 +141,7 @@ static void expandToNeighbor (grid_t* myGridPtr, long x, long y, long z, long va
 
 
 /* =============================================================================
- * doExpansion
+ * doExpansion -- Lock point being used?
  * =============================================================================
  */
 static bool_t doExpansion (router_t* routerPtr, grid_t* myGridPtr, queue_t* queuePtr, coordinate_t* srcPtr, coordinate_t* dstPtr){
@@ -195,7 +195,7 @@ static bool_t doExpansion (router_t* routerPtr, grid_t* myGridPtr, queue_t* queu
 
 
 /* =============================================================================
- * traceToNeighbor
+ * traceToNeighbor -- Again, maybe lock points being used?
  * =============================================================================
  */
 static void traceToNeighbor (grid_t* myGridPtr, point_t* currPtr, point_t* movePtr, bool_t useMomentum, long bendCost, point_t* nextPtr){
@@ -224,7 +224,7 @@ static void traceToNeighbor (grid_t* myGridPtr, point_t* currPtr, point_t* moveP
 
 
 /* =============================================================================
- * doTraceback
+ * doTraceback -- Again, lock points being used?
  * =============================================================================
  */
 static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* dstPtr, long bendCost){
@@ -293,7 +293,7 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
 
 
 /* =============================================================================
- * router_solve
+ * router_solve -- pathVectorList lock and queue lock can't be optimized?
  * =============================================================================
  */
 void* router_solve (void* argPtr){
@@ -318,7 +318,7 @@ void* router_solve (void* argPtr){
     while (1) {
 
         pair_t* coordinatePairPtr;
-        pthread_mutex_lock(&queue_lock);
+        pthread_mutex_lock(&queue_lock);  //Simple lock, might remain this way
         if (queue_isEmpty(workQueuePtr)) {
             coordinatePairPtr = NULL;
         } else {
