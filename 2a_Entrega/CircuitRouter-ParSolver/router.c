@@ -338,18 +338,18 @@ void* router_solve (void* argPtr){
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
 
-        pthread_mutex_lock(&grid_lock);
+        
         grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
         if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
                          srcPtr, dstPtr)) {
             pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
             if (pointVectorPtr) {
-                grid_addPath_Ptr(gridPtr, pointVectorPtr);
-
-                success = TRUE;
+                pthread_mutex_lock(&grid_lock);      
+                success = grid_addPath_Ptr(gridPtr, pointVectorPtr);
+                pthread_mutex_unlock(&grid_lock);
             }
         }
-        pthread_mutex_unlock(&grid_lock);
+        
 
         if (success) {
             bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
