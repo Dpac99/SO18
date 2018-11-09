@@ -288,8 +288,7 @@ bool_t grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
     long i, j, k;
     long n = vector_getSize(pointVectorPtr);
     bool_t locked;
-    int tries=1;
-    double time;
+    struct timespec time;
 
 
     for (i=1; i<(n-1); i++){
@@ -309,8 +308,9 @@ bool_t grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
                 long* gridPointPtr = (long*)vector_at(pointVectorPtr, j);
                 mutex_grid_unlock(gridPtr, gridPointPtr);
             }
-            time = (random() % (100*tries++))/100;
-            usleep(time);
+            time.tv_sec=0;
+            time.tv_nsec=(random() % 900 + 100);
+            nanosleep(&time, NULL);
             i=0;
         }
     }
