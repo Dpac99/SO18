@@ -253,6 +253,23 @@ void mutex_grid_destroy (grid_t* gridPtr, long* gridPointPtr){
 
 
 /* =============================================================================
+ * grid_check_point
+ * =============================================================================
+ */
+bool_t grid_check_point(grid_t* gridPtr, long* gridPointPtr, vector_t* pointVectorPtr, long i){
+    long k;
+    if(*gridPointPtr == GRID_POINT_FULL){
+        for(k = 1; k<=i; k++){
+            long* gridPointPtr = (long*)vector_at(pointVectorPtr, k);
+            mutex_grid_unlock(gridPtr, gridPointPtr);
+        }   
+        return FALSE;
+    }
+    return TRUE;
+}
+
+
+/* =============================================================================
  * mutex_grid_trylock
  * =============================================================================
  */
@@ -285,33 +302,37 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
  * =============================================================================
  */
 bool_t grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
-    long i, j, k;
+    long i, j;
     long n = vector_getSize(pointVectorPtr);
-    bool_t locked;
+    bool_t canLock;
     struct timespec time;
+    time.tv_sec=0;
 
 
     for (i=1; i<(n-1); i++){
         long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
-        locked = mutex_grid_trylock(gridPtr, gridPointPtr);
-        if(locked){
-            if(*gridPointPtr == GRID_POINT_FULL){
-                for(k = 1; k<=i; k++){
-                    long* gridPointPtr = (long*)vector_at(pointVectorPtr, k);
+        canLock = mutex_grid_trylock(gridPtr, gridPointPtr);
+        if(!canLock){
+            time.tv_nsec=(random() % 500 + 50);
+            nanosleep(&time, NULL);
+            canLock = mutex_grid_trylock(gridPtr, gridPointPtr);
+            if(!canLock){
+                for(j = 1; j<i; j++){
+                    long* gridPointPtr = (long*)vector_at(pointVectorPtr, j);
                     mutex_grid_unlock(gridPtr, gridPointPtr);
-                }   
-                return FALSE;
+                }
+                i=0;
+            }
+            else{
+                if(!grid_check_point(gridPtr, gridPointPtr, pointVectorPtr, i)){
+                    return FALSE;
+                }
             }
         }
         else{
-            for(j = 1; j<i; j++){
-                long* gridPointPtr = (long*)vector_at(pointVectorPtr, j);
-                mutex_grid_unlock(gridPtr, gridPointPtr);
+            if(!grid_check_point(gridPtr, gridPointPtr, pointVectorPtr, i)){
+                return FALSE;
             }
-            time.tv_sec=0;
-            time.tv_nsec=(random() % 900 + 100);
-            nanosleep(&time, NULL);
-            i=0;
         }
     }
 
