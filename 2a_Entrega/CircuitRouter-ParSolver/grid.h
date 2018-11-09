@@ -81,7 +81,7 @@ enum {
  * grid_alloc
  * =============================================================================
  */
-grid_t* grid_alloc (long width, long height, long depth, bool_t locks);
+grid_t* grid_alloc (long width, long height, long depth);
 
 
 /* =============================================================================

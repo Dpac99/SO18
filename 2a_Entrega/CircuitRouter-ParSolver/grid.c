@@ -72,7 +72,7 @@ const unsigned long CACHE_LINE_SIZE = 32UL;
  * grid_alloc
  * =============================================================================
  */
-grid_t* grid_alloc (long width, long height, long depth, bool_t locks){
+grid_t* grid_alloc (long width, long height, long depth){
     grid_t* gridPtr;
 
     gridPtr = (grid_t*)malloc(sizeof(grid_t));
@@ -88,17 +88,12 @@ grid_t* grid_alloc (long width, long height, long depth, bool_t locks){
                                           & ~(CACHE_LINE_SIZE-1)))
                                   + CACHE_LINE_SIZE);
         memset(gridPtr->points, GRID_POINT_EMPTY, (n * sizeof(long)));
-        if(locks){
-            pthread_mutex_t* locks = (pthread_mutex_t*)malloc(n * sizeof(pthread_mutex_t));
-            assert(locks);
-            for(long i = 0; i < n; i++ ){
-                assert(!pthread_mutex_init(&(locks[i]), NULL));
-            }
-            gridPtr->locks = locks;
+        pthread_mutex_t* locks = (pthread_mutex_t*)malloc(n * sizeof(pthread_mutex_t));
+        assert(locks);
+        for(long i = 0; i < n; i++ ){
+            assert(!pthread_mutex_init(&(locks[i]), NULL));
         }
-        else{
-            gridPtr->locks = NULL;
-        }
+        gridPtr->locks = locks;
     }
 
     return gridPtr;
@@ -111,16 +106,14 @@ grid_t* grid_alloc (long width, long height, long depth, bool_t locks){
  */
 void grid_free (grid_t* gridPtr){
     free(gridPtr->points_unaligned);
-    if(gridPtr->locks != NULL){
-        long x = gridPtr->width;
-        long y = gridPtr->height;
-        long z = gridPtr->depth;
-        long n = x*y*z;
-        for(long i=0; i<n; i++){
-            assert(!pthread_mutex_destroy(&(gridPtr->locks[i])));
-        }
-        free(gridPtr->locks);
+    long x = gridPtr->width;
+    long y = gridPtr->height;
+    long z = gridPtr->depth;
+    long n = x*y*z;
+    for(long i=0; i<n; i++){
+        assert(!pthread_mutex_destroy(&(gridPtr->locks[i])));
     }
+    free(gridPtr->locks);
     free(gridPtr);
 }
 
@@ -312,16 +305,13 @@ bool_t grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
             }
         }
         else{
+            for(j = 1; j<i; j++){
+                long* gridPointPtr = (long*)vector_at(pointVectorPtr, j);
+                mutex_grid_unlock(gridPtr, gridPointPtr);
+            }
             time = (random() % (100*tries++))/100;
             usleep(time);
-            locked = mutex_grid_trylock(gridPtr, gridPointPtr);
-            if(!locked){
-                for(j = 1; j<i; j++){
-                    long* gridPointPtr = (long*)vector_at(pointVectorPtr, j);
-                    mutex_grid_unlock(gridPtr, gridPointPtr);
-                }
-                i=0;
-            }
+            i=0;
         }
     }
 

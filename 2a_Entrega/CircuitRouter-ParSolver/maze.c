@@ -255,7 +255,7 @@ long maze_read (maze_t* mazePtr, char * input, FILE * fp){
                 width, height, depth);
         exit(1);
     }
-    grid_t* gridPtr = grid_alloc(width, height, depth, TRUE);
+    grid_t* gridPtr = grid_alloc(width, height, depth);
     assert(gridPtr);
     mazePtr->gridPtr = gridPtr;
     addToGrid(gridPtr, wallVectorPtr, "wall");
@@ -291,7 +291,7 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, FILE *fp, bo
     long i;
 
     /* Mark walls */
-    grid_t* testGridPtr = grid_alloc(width, height, depth, FALSE);
+    grid_t* testGridPtr = grid_alloc(width, height, depth);
     grid_addPath(testGridPtr, mazePtr->wallVectorPtr);
 
     /* Mark sources */

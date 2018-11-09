@@ -305,7 +305,7 @@ void* router_solve (void* argPtr){
 
     queue_t* workQueuePtr = mazePtr->workQueuePtr;
     grid_t* gridPtr = mazePtr->gridPtr;
-    grid_t* myGridPtr = grid_alloc(gridPtr->width, gridPtr->height, gridPtr->depth, FALSE);
+    grid_t* myGridPtr = grid_alloc(gridPtr->width, gridPtr->height, gridPtr->depth);
     assert(myGridPtr);
     long bendCost = routerPtr->bendCost;
     queue_t* myExpansionQueuePtr = queue_alloc(-1);
