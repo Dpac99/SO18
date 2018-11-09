@@ -4,6 +4,7 @@ make > /dev/null
 make -C ../CircuitRouter-SeqSolver > /dev/null
 
 errcnt=0
+avgspd=0
 total=$(($2 * $1))
 file=random-x32-y32-z3-n64.txt
 paths=0
@@ -16,6 +17,7 @@ for i in $(seq 1 $2); do
     paths=$((paths + $(cut -c 19-21 <(grep "Paths routed" ../inputs/$file.res))))
     for f in $(seq 1 $1); do
         temp=$(cut -c 13- <(grep "$f," ../results/$file.speedups.csv))
+        avgspd=$(echo "$avgspd + $temp" | bc)
         if (( $(echo "$temp > $max" |bc -l) )); then
             max=$temp
             nthreads=$f
@@ -24,16 +26,16 @@ for i in $(seq 1 $2); do
 done
 
 success=$((total - errcnt))
-percentage=$(echo "scale=2; ${success}*100/${total}" | bc)
 
 echo "========================================="
 echo " errors: $errcnt"
 echo " sucesses: $success"
-echo " percentage: ${percentage}%"
+echo " percentage: $(echo "scale=2; ${success}*100/${total}" | bc)%"
 echo " average paths: $(echo "scale = 2; $paths / $2 " | bc)"
 echo " max speedup: $max for $nthreads threads"
+echo " average speedup: $(echo "scale = 6; $avgspd / $total " | bc)"
 echo "========================================="
-beep
+#beep
 
 make clean > /dev/null
 make clean -C ../CircuitRouter-SeqSolver > /dev/null

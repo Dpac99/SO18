@@ -317,13 +317,13 @@ void* router_solve (void* argPtr){
     while (1) {
 
         pair_t* coordinatePairPtr;
-        pthread_mutex_lock(queue_lock); 
+        assert(!pthread_mutex_lock(queue_lock)); 
         if (queue_isEmpty(workQueuePtr)) {
             coordinatePairPtr = NULL;
         } else {
             coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
         }
-        pthread_mutex_unlock(queue_lock);
+        assert(!pthread_mutex_unlock(queue_lock));
         if (coordinatePairPtr == NULL) {
             break;
         }
@@ -365,10 +365,10 @@ void* router_solve (void* argPtr){
      */
     
     if(myPathVectorPtr){
-        pthread_mutex_lock(list_lock);
+        assert(!pthread_mutex_lock(list_lock));
         list_t* pathVectorListPtr = routerArgPtr->pathVectorListPtr;
         list_insert(pathVectorListPtr, (void*)myPathVectorPtr);
-        pthread_mutex_unlock(list_lock);
+        assert(!pthread_mutex_unlock(list_lock));
     }
     else{
         vector_free(myPathVectorPtr);

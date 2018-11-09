@@ -121,8 +121,8 @@ void maze_free (maze_t* mazePtr){
     assert(vector_getSize(mazePtr->dstVectorPtr) == 0);
     vector_free(mazePtr->dstVectorPtr);
 
-    assert(pthread_mutex_destroy(&(mazePtr->queue_lock)) == 0);
-    assert(pthread_mutex_destroy(&(mazePtr->list_lock)) == 0);
+    assert(!pthread_mutex_destroy(&(mazePtr->queue_lock)));
+    assert(!pthread_mutex_destroy(&(mazePtr->list_lock)));
 
     free(mazePtr);
 }
