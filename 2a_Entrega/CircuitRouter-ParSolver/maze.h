@@ -69,6 +69,8 @@ typedef struct maze {
     vector_t* wallVectorPtr; /* obstacles */
     vector_t* srcVectorPtr;  /* sources */
     vector_t* dstVectorPtr;  /* destinations */
+    pthread_mutex_t queue_lock;  /* lock for grid */
+    pthread_mutex_t list_lock;  /* lock for list */
 } maze_t;
 
 

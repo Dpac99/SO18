@@ -78,10 +78,13 @@ maze_t* maze_alloc (){
         mazePtr->wallVectorPtr = vector_alloc(1);
         mazePtr->srcVectorPtr = vector_alloc(1);
         mazePtr->dstVectorPtr = vector_alloc(1);
+        int err1 = pthread_mutex_init(&(mazePtr->queue_lock), NULL);
+        err1 += pthread_mutex_init(&(mazePtr->list_lock), NULL); /* If both inits go right, both return 0 and sum is 0 */
         assert(mazePtr->workQueuePtr &&
                mazePtr->wallVectorPtr &&
                mazePtr->srcVectorPtr &&
-               mazePtr->dstVectorPtr);
+               mazePtr->dstVectorPtr &&
+               !err1);
     }
 
     return mazePtr;
@@ -117,6 +120,9 @@ void maze_free (maze_t* mazePtr){
     }
     assert(vector_getSize(mazePtr->dstVectorPtr) == 0);
     vector_free(mazePtr->dstVectorPtr);
+
+    assert(pthread_mutex_destroy(&(mazePtr->queue_lock)) == 0);
+    assert(pthread_mutex_destroy(&(mazePtr->list_lock)) == 0);
 
     free(mazePtr);
 }
@@ -155,6 +161,7 @@ long maze_read (maze_t* mazePtr, char * input, FILE * fp){
     inputFile = fopen(input,"rt");
     if(!inputFile){
         fprintf(stderr, "Error: Could not read %s\n", input);
+        fclose(inputFile);
         exit(EXIT_FAILURE);
     }
     /*
@@ -238,6 +245,7 @@ long maze_read (maze_t* mazePtr, char * input, FILE * fp){
         
     } /* iterate over lines in input file */
     
+    fclose(inputFile);
     
     /*
      * Initialize grid contents
@@ -247,7 +255,7 @@ long maze_read (maze_t* mazePtr, char * input, FILE * fp){
                 width, height, depth);
         exit(1);
     }
-    grid_t* gridPtr = grid_alloc(width, height, depth);
+    grid_t* gridPtr = grid_alloc(width, height, depth, TRUE);
     assert(gridPtr);
     mazePtr->gridPtr = gridPtr;
     addToGrid(gridPtr, wallVectorPtr, "wall");
@@ -283,7 +291,7 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, FILE *fp, bo
     long i;
 
     /* Mark walls */
-    grid_t* testGridPtr = grid_alloc(width, height, depth);
+    grid_t* testGridPtr = grid_alloc(width, height, depth, FALSE);
     grid_addPath(testGridPtr, mazePtr->wallVectorPtr);
 
     /* Mark sources */

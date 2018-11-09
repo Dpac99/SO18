@@ -27,11 +27,11 @@ success=$((total - errcnt))
 percentage=$(echo "scale=2; ${success}*100/${total}" | bc)
 
 echo "========================================="
-echo "| errors: $errcnt                             |"
-echo "| sucesses: $success                          |"
-echo "| percentage: ${percentage}%                   |"
-echo "| average paths: $(echo "scale = 2; $paths / $2 " | bc)                  | "
-echo "| max speedup: $max for $nthreads threads   |"
+echo " errors: $errcnt"
+echo " sucesses: $success"
+echo " percentage: ${percentage}%"
+echo " average paths: $(echo "scale = 2; $paths / $2 " | bc)"
+echo " max speedup: $max for $nthreads threads"
 echo "========================================="
 beep
 

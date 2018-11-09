@@ -223,7 +223,7 @@ int main(int argc, char** argv){
     TIMER_T startTime;
     TIMER_READ(startTime);
 
-    create_threads(&routerArg);   //router_solve((void *)&routerArg);
+    create_threads(&routerArg);
     for(int i = 0; i<global_params[PARAM_THREADS]; i++){
         if(pthread_join(global_threads[i], NULL) != 0){
             fprintf(stderr, "Error joining threads\n");
@@ -268,6 +268,7 @@ int main(int argc, char** argv){
         vector_free(pathVectorPtr);
     }
     list_free(pathVectorListPtr);
+    free(global_threads);
 
     fclose(resultFp);
     exit(0);

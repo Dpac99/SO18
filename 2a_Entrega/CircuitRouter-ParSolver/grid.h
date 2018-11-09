@@ -55,8 +55,10 @@
 #define GRID_H 1
 
 #include <stdio.h>
+#include <pthread.h>
 #include "../lib/types.h"
 #include "../lib/vector.h"
+
 
 
 typedef struct grid {
@@ -65,7 +67,9 @@ typedef struct grid {
     long depth;
     long* points;
     long* points_unaligned;
+    pthread_mutex_t* locks;
 } grid_t;
+
 
 enum {
     GRID_POINT_FULL  = -2L,
@@ -77,7 +81,35 @@ enum {
  * grid_alloc
  * =============================================================================
  */
-grid_t* grid_alloc (long width, long height, long depth);
+grid_t* grid_alloc (long width, long height, long depth, bool_t locks);
+
+
+/* =============================================================================
+ * mutex_grid_lock
+ * =============================================================================
+ */
+void mutex_grid_lock (grid_t* gridPtr, long* gridPointPtr);
+
+
+/* =============================================================================
+ * mutex_grid_unlock
+ * =============================================================================
+ */
+void mutex_grid_unlock (grid_t* gridPtr, long* gridPointPtr);
+
+
+/* =============================================================================
+ * mutex_grid_trylock
+ * =============================================================================
+ */
+bool_t mutex_grid_trylock (grid_t* gridPtr, long* gridPointPtr);
+
+
+/* =============================================================================
+ * mutex_grid_destroy
+ * =============================================================================
+ */
+void mutex_grid_destroy (grid_t* gridPtr, long* gridPointPtr);
 
 
 /* =============================================================================
