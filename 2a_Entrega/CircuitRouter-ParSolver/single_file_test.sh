@@ -6,17 +6,17 @@ make -C ../CircuitRouter-SeqSolver > /dev/null
 errcnt=0
 avgspd=0
 total=$(($2 * $1))
-file=random-x32-y32-z3-n64.txt
+file=inputs/random-x128-y128-z3-n128.txt
 paths=0
 max=0
 nthreads=0
 temp=0
 for i in $(seq 1 $2); do
-    ./doTest.sh $1 inputs/$file &> /dev/null
-    errcnt=$((errcnt + $(grep -c ",," ../results/$file.speedups.csv) ))
-    paths=$((paths + $(cut -c 19-21 <(grep "Paths routed" ../inputs/$file.res))))
+    ../doTest.sh $1 $file &> /dev/null
+    errcnt=$((errcnt + $(grep -c ",," ../$file.speedups.csv) ))
+    paths=$((paths + $(cut -c 19-21 <(grep "Paths routed" ../$file.res))))
     for f in $(seq 1 $1); do
-        temp=$(cut -c 13- <(grep "$f," ../results/$file.speedups.csv))
+        temp=$(cut -c 13- <(grep "$f," ../$file.speedups.csv))
         avgspd=$(echo "$avgspd + $temp" | bc)
         if (( $(echo "$temp > $max" |bc -l) )); then
             max=$temp

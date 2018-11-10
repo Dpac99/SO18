@@ -223,16 +223,6 @@ void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
 
 
 /* =============================================================================
- * mutex_grid_lock
- * =============================================================================
- */
-void mutex_grid_lock (grid_t* gridPtr, long* gridPointPtr){
-    long index = grid_getPointPosition(gridPtr, gridPointPtr);
-    assert(!pthread_mutex_lock(&(gridPtr->locks[index])));
-}
-
-
-/* =============================================================================
  * mutex_grid_unlock
  * =============================================================================
  */

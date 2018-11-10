@@ -152,8 +152,8 @@ static void parseArgs (long argc, char* const argv[]){
 
     global_inputFile = argv[optind];
 
-    if(global_params[PARAM_THREADS] == -1){
-        fprintf(stderr, "Missing number of threads\n");
+    if(global_params[PARAM_THREADS] <= 0 ){
+        fprintf(stderr, "Invalid number of threads\n");
         displayUsage(argv[0]);
     }
 }
