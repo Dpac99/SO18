@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "stdlib.h": "c",
+        "circuitrouter-simpleshell.h": "c",
+        "unistd.h": "c"
+    }
+}
