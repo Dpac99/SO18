@@ -9,27 +9,23 @@
 
 #define MAXLINHA 1024
 
-void sendMsg(int fd){
-    int numArgs;
-    char buff[MAXLINHA + 1];
-    char *args[3];
+void sendMsg(int wfd, int rfd){
+    int commandSize=0;
+    char buff[MAXLINHA + 1], msg[2*MAXLINHA];
+    
 
     while(1){
 
-        numArgs = readLineArguments(args,4,buff, MAXLINHA+1);
+        sprintf(msg, "%d", getpid());
+        fgets(buff, MAXLINHA, stdin);
+        strcat(msg, buff);
+        write(wfd, buff, commandSize+1); 
+        memset(buff, 0, commandSize+1);
+        read(rfd, buff, MAXLINHA+1);
+        printf("%s\n", buff);
+        memset(buff, 0, commandSize+1);
+        memset(msg, 0, 2*MAXLINHA);
 
-        if (numArgs!=2) {
-            perror("Error");
-        }
-        else{
-            int commandSize = strlen(args[0]) + strlen(args[1]);
-            char buffer[commandSize+1];
-            strcpy(buffer, args[0]);
-            strcat(buffer, " ");
-            strcat(buffer, args[1]);
-            write(fd, buffer, commandSize+1); 
-            memset(buff, 0, commandSize+1);
-        }
     }
 }
 
@@ -41,17 +37,21 @@ int main(int argc, char** argv){
             perror("Error opening file");
             exit(EXIT_FAILURE);
         }
-        char path[100];
+        char path[100], *new_path;
         strcpy(path, "clientXXXXXX");
         size_t size = strlen(path)*sizeof(char);
-        char* new_path = mktemp(path);
+
+        new_path = mktemp(path);
         write(write_ds, new_path, size);
-        sendMsg(write_ds);
-        /*int read_ds = open(new_path, O_RDONLY);
+        mkfifo(new_path, 0666);
+
+        int read_ds = open(new_path, O_RDONLY);
         if(!strcmp("",new_path) || read_ds < 0){
-            perror("Error creating pipe\n");
+            perror("Error creating pipe");
             exit(EXIT_FAILURE);
-        }*/
+        }
+        
+        sendMsg(write_ds, read_ds);
     }
     else{
         perror("Wrong arguments");

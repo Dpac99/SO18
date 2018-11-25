@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/select.h>
 
 
 #define COMMAND_EXIT "exit"
@@ -66,21 +67,108 @@ void printChildren(vector_t *children) {
     puts("END.");
 }
 
+void sendError(client_t *client){
+    char msg[] = "Command not supported.\n";
+    size_t size = 24;
+    int fds;
+
+    fds = open(client->file, O_WRONLY);
+    write(fds, msg, size);
+}
+
+/*====================================================== 
+ * reads line from pipe and parses.
+ * @params: modifiable array containing args, size of array, file descriptor and client info vector
+ * @returns: number of arguments read.
+ * This function functions similarly to the one defined for reading a line from
+ * stdin. All code made for stdin input (from SimpleShell) will still work
+ * ======================================================
+ */
+
+int readFdsArguments(char **argVector, int vectorSize, int fds, vector_t *clients, client_t* client){
+  int numTokens = 0, size, pid;
+  client_t* temp;
+  char *s = " \r\n\t", buffer[BUFFER_SIZE+1], *command;
+  bool_t exists=FALSE;
+
+  int i;
+
+  char *token;
+
+  if (argVector == NULL ||  vectorSize <= 0 )
+     return 0;
+
+  if (read(fds, buffer, BUFFER_SIZE) <1 ) {
+    return -1;
+  }
+
+  /* get the first token */
+  token = strtok(buffer, s);
+
+  /* walk through other tokens */
+  while( numTokens < vectorSize-1 && token != NULL ) {
+    argVector[numTokens] = token;
+    numTokens ++;
+
+    token = strtok(NULL, s);
+  }
+
+  for (i = numTokens; i<vectorSize; i++) {
+    argVector[i] = NULL;
+  }
+  
+  pid =atoi(argVector[0]);
+  size = vector_getSize(clients);
+  for(i=0;  i<size; i++){
+      temp = vector_at(clients,i);
+      if(temp->pid == pid ){
+          client = temp;
+          exists = TRUE;
+          break;
+      }
+  }
+
+  if(numTokens == 2){
+      command = argVector[1];
+      if(strstr(command, "client") !=NULL && !exists){
+          client_t *client1 = (client_t*)malloc(sizeof(client));
+          client1->pid = pid;
+          client1->file=command;
+          vector_pushBack(clients, client1);
+          client=client1;
+          return 0;
+      }
+      else{
+          return -1;
+      }
+  }
+
+  for(i=0; i<vectorSize-1; i++){
+    argVector[i] = argVector[i+1];
+  }
+
+  return numTokens - 1;
+}
+
 int main (int argc, char** argv) {
 
     char *args[MAXARGS + 1], *path;
     char buffer[BUFFER_SIZE];
     int MAXCHILDREN = -1;
     vector_t *children;
+    vector_t *clients;
+    client_t *currClient;
     int runningChildren = 0;
     int pipe_ds;
-    //char* write_ds;
+    fd_set mask;
+    bool_t commandline;
 
     if(argv[1] != NULL){
         MAXCHILDREN = atoi(argv[1]);
     }
 
     children = vector_alloc(MAXCHILDREN);
+    clients = vector_alloc(10);
 
 
     printf("Welcome to CircuitRouter-SimpleShell\n\n");
@@ -88,21 +176,34 @@ int main (int argc, char** argv) {
     path = (char*)malloc( (strlen(argv[0]) + 6) *sizeof(char) );
     strcpy(path, argv[0]);
     strcat(path, ".pipe");
-    int n;
     mkfifo(path, 0666);
     pipe_ds = open(path, O_RDONLY);
-    while( (n=read(pipe_ds, buffer, BUFFER_SIZE+1))){
-    printf("%s\n", buffer);
-    memset(buffer,0,n);
-    }
+    FD_SET(pipe_ds, &mask);
+    FD_SET(0, &mask);
 
     while (1) {
         int numArgs;
 
-        numArgs = readLineArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
+        printf("Before select\n");
+        select(2,&mask,0,0,NULL);
+        printf("After select\n");
+
+        if( FD_ISSET(0, &mask) ){
+            numArgs = readLineArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
+            commandline=TRUE;
+        }
+
+        if( FD_ISSET(pipe_ds, &mask)){
+            numArgs = readFdsArguments(args, MAXARGS+1, pipe_ds, clients, currClient);
+            commandline=FALSE;
+            if(numArgs == -1){
+                sendError(currClient);
+                continue;
+            }
+        }
 
         /* EOF (end of file) do stdin ou comando "sair" */
-        if (numArgs < 0 || (numArgs > 0 && (strcmp(args[0], COMMAND_EXIT) == 0))) {
+        if (numArgs < 0 || (numArgs > 0 && (strcmp(args[0], COMMAND_EXIT) == 0) && commandline)) {
             printf("CircuitRouter-SimpleShell will exit.\n--\n");
 
             /* Espera pela terminacao de cada filho */
@@ -119,7 +220,12 @@ int main (int argc, char** argv) {
         else if (numArgs > 0 && strcmp(args[0], COMMAND_RUN) == 0){
             int pid;
             if (numArgs < 2) {
-                printf("%s: invalid syntax. Try again.\n", COMMAND_RUN);
+                if(commandline){
+                    printf("%s: invalid syntax. Try again.\n", COMMAND_RUN);
+                }
+                else{
+                    sendError(currClient);
+                }
                 continue;
             }
             if (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
@@ -139,7 +245,7 @@ int main (int argc, char** argv) {
                 continue;
             } else {
                 char seqsolver[] = "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver";
-                char *newArgs[3] = {seqsolver, args[1], NULL};
+                char *newArgs[4] = {seqsolver, args[1], currClient->file, NULL};
 
                 execv(seqsolver, newArgs);
                 perror("Error while executing child process"); // Nao deveria chegar aqui
@@ -151,8 +257,14 @@ int main (int argc, char** argv) {
             /* Nenhum argumento; ignora e volta a pedir */
             continue;
         }
-        else
-            printf("Unknown command. Try again.\n");
+        else{
+            if(commandline){
+                printf("Unknown command. Try again.\n");
+            }
+            else{
+                sendError(currClient);
+            }
+        }
 
     }
 

@@ -5,7 +5,7 @@ SOURCES = CircuitRouter-AdvancedShell.c
 SOURCES+= ../lib/commandlinereader.c ../lib/vector.c
 OBJS = $(SOURCES:%.c=%.o)
 CC   = gcc
-CFLAGS =-Wall -std=gnu99 -I../
+CFLAGS =-Wall -g -std=gnu99 -I../
 LDFLAGS=-lm
 TARGET = CircuitRouter-AdvancedShell 
 
@@ -25,7 +25,7 @@ $(OBJS):
 CircuitRouter-SeqSolver:
 	(cd ../CircuitRouter-SeqSolver/ && make)	
 
-CircuitRouter-Client: CircuitRouter-Client.o ../lib/commandlinereader.o 
+CircuitRouter-Client: CircuitRouter-Client.o 
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
@@ -33,4 +33,6 @@ clean:
 	rm -f $(OBJS) $(TARGET) 
 	rm -f $(OBJS) CircuitRouter-Client
 	rm -f $(OBJS) CircuitRouter-Client.o
+	rm -f *.pipe
+	rm -f client*
 	(cd ../CircuitRouter-SeqSolver/ && make clean) 

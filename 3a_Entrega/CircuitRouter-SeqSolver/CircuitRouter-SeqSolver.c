@@ -58,7 +58,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "lib/list.h"
+#include "../lib/list.h"
 #include "maze.h"
 #include "router.h"
 #include "lib/timer.h"
@@ -80,6 +80,7 @@ enum param_defaults {
 
 bool_t global_doPrint = TRUE;
 char* global_inputFile = NULL;
+char* global_outputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
 
 
@@ -144,6 +145,7 @@ static void parseArgs (long argc, char* const argv[]){
     }
 
     global_inputFile = argv[optind];
+    global_outputFile = argv[optind+1];
 }
 
 /* =============================================================================
@@ -182,6 +184,8 @@ int main(int argc, char** argv){
      * Initialization
      */
     parseArgs(argc, argv);
+    int fds;
+    fds = open(global_outputFile, O_WRONLY);
     FILE* resultFp = outputFile();
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
@@ -221,6 +225,7 @@ int main(int argc, char** argv){
     bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, resultFp, global_doPrint);
     assert(status == TRUE);
     fputs("Verification passed.\n",resultFp);
+    write(fds, "Circuit Solved\n", 16);
 
     maze_free(mazePtr);
     router_free(routerPtr);

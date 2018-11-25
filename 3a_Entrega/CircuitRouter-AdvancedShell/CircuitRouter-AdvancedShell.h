@@ -9,6 +9,11 @@ typedef struct {
     int status;
 } child_t;
 
+typedef struct {
+    pid_t pid;
+    char* file;
+} client_t;
+
 void waitForChild(vector_t *children);
 void printChildren(vector_t *children);
 
