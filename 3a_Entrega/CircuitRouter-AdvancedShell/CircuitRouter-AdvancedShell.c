@@ -67,13 +67,14 @@ void printChildren(vector_t *children) {
     puts("END.");
 }
 
-void sendError(client_t *client){
+void sendError(char *client){
     char msg[] = "Command not supported.\n";
     size_t size = 24;
     int fds;
 
-    fds = open(client->file, O_WRONLY);
+    fds = open(client, O_WRONLY);
     write(fds, msg, size);
+    close(fds);
 }
 
 /*====================================================== 
@@ -85,11 +86,9 @@ void sendError(client_t *client){
  * ======================================================
  */
 
-int readFdsArguments(char **argVector, int vectorSize, int fds, vector_t *clients, client_t* client){
-  int numTokens = 0, size, pid;
-  client_t* temp;
-  char *s = " \r\n\t", buffer[BUFFER_SIZE+1], *command;
-  bool_t exists=FALSE;
+int readFdsArguments(char **argVector, int vectorSize, int fds, char* client){
+  int numTokens = 0;
+  char *s = " \r\n\t", buffer[BUFFER_SIZE+1];
 
   int i;
 
@@ -102,6 +101,7 @@ int readFdsArguments(char **argVector, int vectorSize, int fds, vector_t *client
     return -1;
   }
 
+
   /* get the first token */
   token = strtok(buffer, s);
 
@@ -113,35 +113,11 @@ int readFdsArguments(char **argVector, int vectorSize, int fds, vector_t *client
     token = strtok(NULL, s);
   }
 
-  for (i = numTokens; i<vectorSize; i++) {
+  for (i = numTokens; i<vectorSize; i++) {  
     argVector[i] = NULL;
   }
-  
-  pid =atoi(argVector[0]);
-  size = vector_getSize(clients);
-  for(i=0;  i<size; i++){
-      temp = vector_at(clients,i);
-      if(temp->pid == pid ){
-          client = temp;
-          exists = TRUE;
-          break;
-      }
-  }
 
-  if(numTokens == 2){
-      command = argVector[1];
-      if(strstr(command, "client") !=NULL && !exists){
-          client_t *client1 = (client_t*)malloc(sizeof(client));
-          client1->pid = pid;
-          client1->file=command;
-          vector_pushBack(clients, client1);
-          client=client1;
-          return 0;
-      }
-      else{
-          return -1;
-      }
-  }
+  strcpy(client,argVector[0]);
 
   for(i=0; i<vectorSize-1; i++){
     argVector[i] = argVector[i+1];
@@ -156,8 +132,7 @@ int main (int argc, char** argv) {
     char buffer[BUFFER_SIZE];
     int MAXCHILDREN = -1;
     vector_t *children;
-    vector_t *clients;
-    client_t *currClient;
+    char currClient[BUFFER_SIZE];
     int runningChildren = 0;
     int pipe_ds;
     fd_set mask;
@@ -168,7 +143,6 @@ int main (int argc, char** argv) {
     }
 
     children = vector_alloc(MAXCHILDREN);
-    clients = vector_alloc(10);
 
 
     printf("Welcome to CircuitRouter-SimpleShell\n\n");
@@ -177,29 +151,29 @@ int main (int argc, char** argv) {
     strcpy(path, argv[0]);
     strcat(path, ".pipe");
     mkfifo(path, 0666);
-    pipe_ds = open(path, O_RDONLY);
+    pipe_ds = open(path, O_RDONLY | O_NONBLOCK);
+    FD_ZERO(&mask);
     FD_SET(pipe_ds, &mask);
-    FD_SET(0, &mask);
+    FD_SET(STDIN_FILENO, &mask);
 
     while (1) {
-        int numArgs;
+        int numArgs, n;
+        fd_set tempmask = mask;
 
-        printf("Before select\n");
-        select(2,&mask,0,0,NULL);
-        printf("After select\n");
+        n = select(pipe_ds+1,&tempmask,0,0,NULL);
 
-        if( FD_ISSET(0, &mask) ){
-            numArgs = readLineArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
-            commandline=TRUE;
-        }
-
-        if( FD_ISSET(pipe_ds, &mask)){
-            numArgs = readFdsArguments(args, MAXARGS+1, pipe_ds, clients, currClient);
+        if( FD_ISSET(pipe_ds, &tempmask)){
+            numArgs = readFdsArguments(args, MAXARGS+1, pipe_ds, currClient);
             commandline=FALSE;
             if(numArgs == -1){
                 sendError(currClient);
                 continue;
             }
+        }
+
+         if( FD_ISSET(STDIN_FILENO, &tempmask) ){
+            numArgs = readLineArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
+            commandline=TRUE;
         }
 
         /* EOF (end of file) do stdin ou comando "sair" */
@@ -245,7 +219,7 @@ int main (int argc, char** argv) {
                 continue;
             } else {
                 char seqsolver[] = "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver";
-                char *newArgs[4] = {seqsolver, args[1], currClient->file, NULL};
+                char *newArgs[4] = {seqsolver, args[1], currClient, NULL};
 
                 execv(seqsolver, newArgs);
                 perror("Error while executing child process"); // Nao deveria chegar aqui
