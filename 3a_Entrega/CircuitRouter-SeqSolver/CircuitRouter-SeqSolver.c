@@ -145,7 +145,9 @@ static void parseArgs (long argc, char* const argv[]){
     }
 
     global_inputFile = argv[optind];
-    global_outputFile = argv[optind+1];
+    if(optind +1 >= argc){
+        global_outputFile = argv[optind+1];
+    }
 }
 
 /* =============================================================================
@@ -185,7 +187,9 @@ int main(int argc, char** argv){
      */
     parseArgs(argc, argv);
     int fds;
-    fds = open(global_outputFile, O_WRONLY);
+    if(global_outputFile != NULL){
+        fds = open(global_outputFile, O_WRONLY);
+    }
     FILE* resultFp = outputFile();
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
@@ -225,7 +229,9 @@ int main(int argc, char** argv){
     bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, resultFp, global_doPrint);
     assert(status == TRUE);
     fputs("Verification passed.\n",resultFp);
-    write(fds, "Circuit Solved\n", 16);
+    if(global_outputFile != NULL){
+        write(fds, "Circuit Solved\n", 16);
+    }
 
     maze_free(mazePtr);
     router_free(routerPtr);

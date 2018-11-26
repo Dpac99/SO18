@@ -70,11 +70,20 @@ void printChildren(vector_t *children) {
 void sendError(char *client){
     char msg[] = "Command not supported.\n";
     size_t size = 24;
-    int fds;
+    int fds, n;
 
     fds = open(client, O_WRONLY);
+    if(fds < 0){
+        perror("Error opening pipe\n");
+        return;
+    }
     write(fds, msg, size);
-    close(fds);
+    n = close(fds);
+    if( n< 0){
+        perror("Error closing file\n");
+        return;
+    }
+
 }
 
 /*====================================================== 
@@ -87,7 +96,7 @@ void sendError(char *client){
  */
 
 int readFdsArguments(char **argVector, int vectorSize, int fds, char* client){
-  int numTokens = 0;
+  int numTokens = 0, n;
   char *s = " \r\n\t", buffer[BUFFER_SIZE+1];
 
   int i;
@@ -97,8 +106,8 @@ int readFdsArguments(char **argVector, int vectorSize, int fds, char* client){
   if (argVector == NULL ||  vectorSize <= 0 )
      return 0;
 
-  if (read(fds, buffer, BUFFER_SIZE) <1 ) {
-    return -1;
+  if ( (n =read(fds, buffer, BUFFER_SIZE) ) < 1) {
+    return n;
   }
 
 
@@ -148,10 +157,17 @@ int main (int argc, char** argv) {
     printf("Welcome to CircuitRouter-SimpleShell\n\n");
 
     path = (char*)malloc( (strlen(argv[0]) + 6) *sizeof(char) );
+    if(path == NULL){
+        perror("Error allocating memory\n");
+        exit(EXIT_FAILURE);
+    }
     strcpy(path, argv[0]);
     strcat(path, ".pipe");
     mkfifo(path, 0666);
-    pipe_ds = open(path, O_RDONLY | O_NONBLOCK);
+    pipe_ds = open(path, O_RDWR | O_NONBLOCK );
+    if (pipe_ds < 0){
+        perror("Error opening pipe\n");
+    }
     FD_ZERO(&mask);
     FD_SET(pipe_ds, &mask);
     FD_SET(STDIN_FILENO, &mask);
@@ -160,7 +176,7 @@ int main (int argc, char** argv) {
         int numArgs, n;
         fd_set tempmask = mask;
 
-        n = select(pipe_ds+1,&tempmask,0,0,NULL);
+        n = select(1024,&tempmask,0,0,NULL);
 
         if( FD_ISSET(pipe_ds, &tempmask)){
             numArgs = readFdsArguments(args, MAXARGS+1, pipe_ds, currClient);
@@ -168,6 +184,9 @@ int main (int argc, char** argv) {
             if(numArgs == -1){
                 sendError(currClient);
                 continue;
+            }
+            if(numArgs == 0){
+                read(pipe_ds, buffer, BUFFER_SIZE);
             }
         }
 
