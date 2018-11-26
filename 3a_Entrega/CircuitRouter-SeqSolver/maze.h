@@ -91,7 +91,7 @@ void maze_free (maze_t* mazePtr);
  * -- Return number of path to route
  * =============================================================================
  */
-long maze_read (maze_t* mazePtr, char * input, FILE* fp);
+long maze_read (maze_t* mazePtr, char * input, int fds, FILE* fp);
 
 
 /* =============================================================================

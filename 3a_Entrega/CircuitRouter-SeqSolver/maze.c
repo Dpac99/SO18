@@ -62,6 +62,8 @@
 #include "lib/pair.h"
 #include "lib/types.h"
 #include "lib/vector.h"
+#include <unistd.h>
+#include <string.h>
 
 
 /* =============================================================================
@@ -150,11 +152,20 @@ static void addToGrid (grid_t* gridPtr, vector_t* vectorPtr, char* type){
  * =============================================================================
  */
 
-long maze_read (maze_t* mazePtr, char * input, FILE * fp){
+long maze_read (maze_t* mazePtr, char * input, int out,FILE * fp){
     FILE* inputFile;
+    char msg[BUFSIZ];
     inputFile = fopen(input,"rt");
     if(!inputFile){
-        fprintf(stderr, "Error: Could not read %s\n", input);
+        if(out != -1){
+            memset(msg,0, BUFSIZ);
+            sprintf(msg, "Error: Could not read %s\n", input);    
+            size_t size = strlen(msg);
+            write(out, msg, size+1);
+        }
+        else{
+            fprintf(stderr, "Error: Could not read %s\n", input);
+        }
         exit(EXIT_FAILURE);
     }
     /*

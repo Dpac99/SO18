@@ -145,7 +145,7 @@ static void parseArgs (long argc, char* const argv[]){
     }
 
     global_inputFile = argv[optind];
-    if(optind +1 >= argc){
+    if(optind +1 < argc){
         global_outputFile = argv[optind+1];
     }
 }
@@ -186,14 +186,14 @@ int main(int argc, char** argv){
      * Initialization
      */
     parseArgs(argc, argv);
-    int fds;
+    int fds=-1;
     if(global_outputFile != NULL){
         fds = open(global_outputFile, O_WRONLY);
     }
     FILE* resultFp = outputFile();
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
-    long numPathToRoute = maze_read(mazePtr, global_inputFile, resultFp);
+    long numPathToRoute = maze_read(mazePtr, global_inputFile, fds, resultFp);
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],

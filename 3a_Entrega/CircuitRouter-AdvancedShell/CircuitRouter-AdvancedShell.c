@@ -83,7 +83,13 @@ void sendError(char *client){
         perror("Error closing file\n");
         return;
     }
+}
 
+void* handler(int signum){
+    if (signal (SIGCHLD, handler) == SIG_ERR){
+        perror("Erro ao instalar handler");
+    }
+    
 }
 
 /*====================================================== 
@@ -164,7 +170,7 @@ int main (int argc, char** argv) {
     strcpy(path, argv[0]);
     strcat(path, ".pipe");
     mkfifo(path, 0666);
-    pipe_ds = open(path, O_RDWR | O_NONBLOCK );
+    pipe_ds = open(path, O_RDWR);
     if (pipe_ds < 0){
         perror("Error opening pipe\n");
     }
@@ -176,7 +182,7 @@ int main (int argc, char** argv) {
         int numArgs, n;
         fd_set tempmask = mask;
 
-        n = select(1024,&tempmask,0,0,NULL);
+        n = select(pipe_ds+1, &tempmask, 0, 0, NULL);
 
         if( FD_ISSET(pipe_ds, &tempmask)){
             numArgs = readFdsArguments(args, MAXARGS+1, pipe_ds, currClient);
@@ -184,9 +190,6 @@ int main (int argc, char** argv) {
             if(numArgs == -1){
                 sendError(currClient);
                 continue;
-            }
-            if(numArgs == 0){
-                read(pipe_ds, buffer, BUFFER_SIZE);
             }
         }
 
