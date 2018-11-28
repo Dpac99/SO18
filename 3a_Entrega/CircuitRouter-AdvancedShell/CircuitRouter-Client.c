@@ -12,6 +12,12 @@
 void sendMsg(int wfd, char* new_path){
     int commandSize, bufferSize;
     char buff[MAXLINHA + 1], msg[2*MAXLINHA];
+    fd_set mask;
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec=0;
+    int diff;
+
     
     while(1){
 
@@ -31,7 +37,15 @@ void sendMsg(int wfd, char* new_path){
             exit(EXIT_FAILURE);
         }
 
-        bufferSize = read(read_ds, buff, MAXLINHA+1);
+        FD_SET(read_ds, &mask);
+        diff=0;
+        bufferSize=0;
+        do {
+            diff= read(read_ds, buff, MAXLINHA+1);
+            bufferSize+=diff;
+            FD_SET(read_ds, &mask);
+        }
+        while( select(read_ds+1, &mask, NULL, NULL, &timeout) && diff);
         
         printf("%s\n", buff);
         memset(buff, 0, bufferSize);
