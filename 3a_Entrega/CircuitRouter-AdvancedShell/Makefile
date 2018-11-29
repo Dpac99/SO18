@@ -35,4 +35,5 @@ clean:
 	rm -f $(OBJS) CircuitRouter-Client.o
 	rm -f *.pipe
 	rm -f client*
+	rm -f *.res*
 	(cd ../CircuitRouter-SeqSolver/ && make clean) 

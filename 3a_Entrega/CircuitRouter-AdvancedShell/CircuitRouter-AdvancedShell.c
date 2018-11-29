@@ -156,6 +156,7 @@ int readFdsArguments(char **argVector, int vectorSize, int fds, char* client){
     char *s = " \r\n\t", buffer[BUFFER_SIZE+1];
     memset(buffer, '\0', BUFFER_SIZE+1);
     fd_set mask;
+    FD_ZERO(&mask);
     FD_SET(fds, &mask);
     struct timeval timeout;
     timeout.tv_sec = 0;
@@ -168,14 +169,16 @@ int readFdsArguments(char **argVector, int vectorSize, int fds, char* client){
     if (argVector == NULL ||  vectorSize <= 0 ){
         return 0;  
     }
-
+    int offset=0;
     while( select(fds+1, &mask, NULL, NULL, &timeout)){
-        if ( (n =read(fds, buffer, BUFFER_SIZE) ) < 1) {
+        if ( (n =read(fds, buffer + offset, BUFFER_SIZE-offset) ) < 1) { //advance pointer and decrement size;
             if(n == -1 && errno == EINTR){
                 continue;
             }
             return n;
         }
+        offset+=n;
+        FD_ZERO(&mask);
         FD_SET(fds, &mask);
     }
 
@@ -217,6 +220,9 @@ int main (int argc, char** argv) {
     int pipe_ds;
     fd_set mask;
     bool_t commandline;
+    struct timespec sleeper;
+    sleeper.tv_sec=0;
+    sleeper.tv_nsec =1000;
 
     struct sigaction action;
     memset (&action, '\0', sizeof(action));
@@ -243,7 +249,7 @@ int main (int argc, char** argv) {
     }
     strcpy(path, argv[0]);
     strcat(path, ".pipe");
-    mkfifo(path, 0666);
+    mkfifo(path, 0777);
     pipe_ds = open(path, O_RDWR);
     if (pipe_ds < 0){
         perror("Error opening pipe\n");
@@ -284,9 +290,7 @@ int main (int argc, char** argv) {
 
             /* Espera pela terminacao de cada filho */
             while (runningChildren > 0) {
-                //waitForChild();
-                //handler(0);
-                //runningChildren --;
+                nanosleep(&sleeper, NULL);
             }
 
             printChildren();
@@ -309,9 +313,7 @@ int main (int argc, char** argv) {
                 continue;
             }
             while (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
-                //waitForChild();
-                //handler(0);
-                //runningChildren--;
+                nanosleep(&sleeper, NULL);
             }
 
            pid = fork();
