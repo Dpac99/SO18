@@ -30,6 +30,7 @@
 #define BUFFER_SIZE 100
 
 vector_t *children;
+sig_atomic_t runningChildren = 0;
 
 
 /*====================================================== 
@@ -44,23 +45,26 @@ void waitForChild() {
         if (pid < 0) {
             if (errno == EINTR) {
                 /* Este codigo de erro significa que chegou signal que interrompeu a espera
-                   pela terminacao de filho; logo voltamos a esperar */
+                   pela terminacao de filho; logo voltamos a esperar */ 
                 continue;
             } else {
                 perror("Unexpected error while waiting for child.");
                 exit (EXIT_FAILURE);
             }
         }
+        TIMER_T end;
+        TIMER_READ(end);
         for(int i=0; i<size; i++){
             child = vector_at(children, i);
             if(child->pid == pid){
                 child->status = status;
+                child->finish=end;
                 return;
             }
         }
         return;
     }
-}
+} 
 
 
 /*====================================================== 
@@ -112,17 +116,34 @@ void sendError(char *client){
  * handler
  * ======================================================
  */
-static void handler(int sig, siginfo_t* info, void* context){
-    pid_t pid = info->si_pid;
+static void handler(int sig){
+    pid_t pid;
+    int status;
     child_t* child;
+    TIMER_T stop;
+    TIMER_READ(stop);
     int size = vector_getSize(children);
-    for (int i=0; i<size; i++){
-        child = vector_at(children, i);
-        if(child->pid == pid){
-            TIMER_READ(child->finish); 
-            return;
+    while( (pid = waitpid(-1, &status, WNOHANG) ) > 0 ) {
+        runningChildren--;
+        for(int i =0; i<size; i++){
+            child = vector_at(children, i);
+            if(child->pid == pid){
+                child->status = status;
+                child->finish = stop;
+                break;
+            }
         }
     }
+    if(pid == -1){
+        if(errno == ECHILD){
+            return;
+        }
+        else{
+            perror("waitpid");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return;
 }
 
 
@@ -193,15 +214,14 @@ int main (int argc, char** argv) {
         perror("Malloc error");
         exit(EXIT_FAILURE);
     }
-    int runningChildren = 0;
     int pipe_ds;
     fd_set mask;
     bool_t commandline;
 
     struct sigaction action;
     memset (&action, '\0', sizeof(action));
-    action.sa_sigaction = &handler;
-    action.sa_flags = SA_SIGINFO| SA_NOCLDSTOP;
+    action.sa_handler = &handler;
+    action.sa_flags = SA_RESTART| SA_NOCLDSTOP;
     if (sigaction(SIGCHLD, &action, NULL) < 0) {
 		perror ("sigaction");
 		return 1;
@@ -231,8 +251,6 @@ int main (int argc, char** argv) {
     FD_ZERO(&mask);
     FD_SET(pipe_ds, &mask);
     FD_SET(STDIN_FILENO, &mask);
-    sigset_t selectSet;
-    sigemptyset(&selectSet);
  
     while (1) {
         int numArgs;
@@ -266,8 +284,9 @@ int main (int argc, char** argv) {
 
             /* Espera pela terminacao de cada filho */
             while (runningChildren > 0) {
-                waitForChild();
-                runningChildren --;
+                //waitForChild();
+                //handler(0);
+                //runningChildren --;
             }
 
             printChildren();
@@ -289,9 +308,10 @@ int main (int argc, char** argv) {
                 }
                 continue;
             }
-            if (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
-                waitForChild();
-                runningChildren--;
+            while (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
+                //waitForChild();
+                //handler(0);
+                //runningChildren--;
             }
 
            pid = fork();
@@ -310,7 +330,6 @@ int main (int argc, char** argv) {
                 }
                 child->pid = pid;
                 TIMER_READ (child->start);
-                printf("%ld:%ld\n", child->start.tv_sec, child->start.tv_usec);
                 vector_pushBack(children, child);
                 printf("%s: background child started with PID %d.\n\n", COMMAND_RUN, pid);
                 continue;
