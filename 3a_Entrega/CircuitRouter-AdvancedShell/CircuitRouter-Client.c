@@ -6,8 +6,18 @@
 #include <unistd.h>
 #include <string.h>
 #include "../lib/commandlinereader.h"
+#include <errno.h>
+#include <signal.h>
 
 #define MAXLINHA 1024
+
+char *global_path;
+
+void sigpipe_handler(int sig){
+    printf("Pipe has been closed. Program will exit\n");
+    unlink(global_path);
+    exit(EXIT_SUCCESS);
+}
 
 void sendMsg(int wfd, char* new_path){
     int commandSize, bufferSize;
@@ -16,7 +26,7 @@ void sendMsg(int wfd, char* new_path){
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec=0;
-    int diff;
+    int diff, write_ret;
 
     
     while(1){
@@ -28,7 +38,11 @@ void sendMsg(int wfd, char* new_path){
         commandSize = strlen(msg);
         bufferSize = strlen(buff);
         
-        write(wfd, msg, commandSize+1); 
+        write_ret = write(wfd, msg, commandSize+1); 
+        if(write_ret == -1 && errno != EPIPE){
+            perror("write");
+            exit(EXIT_FAILURE);
+        }
         memset(buff, 0, bufferSize);
         
         int read_ds = open(new_path, O_RDONLY);
@@ -57,19 +71,23 @@ void sendMsg(int wfd, char* new_path){
 
 int main(int argc, char** argv){
     if(argc ==2 ){
+        struct sigaction sa;
+        sa.sa_handler = &sigpipe_handler;
+        sigaction(SIGPIPE, &sa, NULL);
         int write_ds = open(argv[1], O_WRONLY);
         if(write_ds < 0){
             perror("Error opening file");
             exit(EXIT_FAILURE);
         }
         char path[100], *new_path;
-        strcpy(path, "clientXXXXXX");
+        strcpy(path, "/tmp/clientXXXXXX");
 
         new_path = mktemp(path);
         if( !strcmp("", new_path)){
             perror("Error generating filename");
             exit(EXIT_FAILURE);
         }
+         global_path = new_path;
         
         mkfifo(new_path, 0777);
 

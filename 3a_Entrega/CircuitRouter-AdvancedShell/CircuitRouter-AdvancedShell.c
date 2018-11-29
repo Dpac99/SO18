@@ -1,6 +1,6 @@
 
 /*
-// Projeto SO - exercise 1, version 1
+// Projeto SO - exercise 3
 // Sistemas Operativos, DEI/IST/ULisboa 2018-19
 */
 
@@ -21,6 +21,7 @@
 #include <sys/select.h>
 #include "../lib/timer.h"
 #include <pthread.h>
+#include <libgen.h>
 
 
 #define COMMAND_EXIT "exit"
@@ -207,6 +208,11 @@ int readFdsArguments(char **argVector, int vectorSize, int fds, char* client){
     return numTokens - 1;
 }
 
+
+/*====================================================== 
+ * main
+ * ======================================================
+ */
 int main (int argc, char** argv) {
 
     char *args[MAXARGS + 1], *path;
@@ -224,11 +230,11 @@ int main (int argc, char** argv) {
     sleeper.tv_sec=0;
     sleeper.tv_nsec =1000;
 
-    struct sigaction action;
-    memset (&action, '\0', sizeof(action));
-    action.sa_handler = &handler;
-    action.sa_flags = SA_RESTART| SA_NOCLDSTOP;
-    if (sigaction(SIGCHLD, &action, NULL) < 0) {
+    struct sigaction sa;
+    memset (&sa, '\0', sizeof(sa));
+    sa.sa_handler = &handler;
+    sa.sa_flags = SA_RESTART| SA_NOCLDSTOP;
+    if (sigaction(SIGCHLD, &sa, NULL) < 0) {
 		perror ("sigaction");
 		return 1;
 	}
@@ -240,14 +246,15 @@ int main (int argc, char** argv) {
     children = vector_alloc(MAXCHILDREN);
 
 
-    printf("Welcome to CircuitRouter-SimpleShell\n\n");
+    printf("Welcome to CircuitRouter-AdvancedShell\n\n");
 
     path = (char*)malloc( (strlen(argv[0]) + 6) *sizeof(char) );
     if(path == NULL){
         perror("Error allocating memory\n");
         exit(EXIT_FAILURE);
     }
-    strcpy(path, argv[0]);
+    strcat(path,"/tmp/");
+    strcat(path, basename(argv[0]));
     strcat(path, ".pipe");
     mkfifo(path, 0777);
     pipe_ds = open(path, O_RDWR);
@@ -273,7 +280,7 @@ int main (int argc, char** argv) {
         if( FD_ISSET(pipe_ds, &tempmask)){
             numArgs = readFdsArguments(args, MAXARGS+1, pipe_ds, currClient);
             commandline=FALSE;
-            if(numArgs == -1){
+            if(numArgs < 1){
                 sendError(currClient);
                 continue;
             }
@@ -286,7 +293,7 @@ int main (int argc, char** argv) {
 
         /* EOF (end of file) do stdin ou comando "sair" */
         if (numArgs < 0 || (numArgs > 0 && (strcmp(args[0], COMMAND_EXIT) == 0) && commandline)) {
-            printf("CircuitRouter-SimpleShell will exit.\n--\n");
+            printf("CircuitRouter-AdvancedShell will exit.\n--\n");
 
             /* Espera pela terminacao de cada filho */
             while (runningChildren > 0) {
@@ -297,7 +304,7 @@ int main (int argc, char** argv) {
             unlink(path);
             free(path);
             free(currClient);
-            printf("--\nCircuitRouter-SimpleShell ended.\n");
+            printf("--\nCircuitRouter-AdvancedShell ended.\n");
             break;
         }
 
