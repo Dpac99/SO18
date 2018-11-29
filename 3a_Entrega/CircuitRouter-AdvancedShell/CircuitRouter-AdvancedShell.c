@@ -19,6 +19,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/select.h>
+#include "../lib/timer.h"
+#include <pthread.h>
 
 
 #define COMMAND_EXIT "exit"
@@ -27,46 +29,70 @@
 #define MAXARGS 3
 #define BUFFER_SIZE 100
 
-void waitForChild(vector_t *children) {
+vector_t *children;
+sig_atomic_t runningChildren = 0;
+
+
+/*====================================================== 
+ * waitForChild
+ * ======================================================
+ */
+void waitForChild() {
     while (1) {
-        child_t *child = malloc(sizeof(child_t));
-        if (child == NULL) {
-            perror("Error allocating memory");
-            exit(EXIT_FAILURE);
-        }
-        child->pid = wait(&(child->status));
-        if (child->pid < 0) {
+        child_t *child;
+        int status, size = vector_getSize(children);
+        pid_t pid = wait(&(status));
+        if (pid < 0) {
             if (errno == EINTR) {
                 /* Este codigo de erro significa que chegou signal que interrompeu a espera
-                   pela terminacao de filho; logo voltamos a esperar */
-                free(child);
+                   pela terminacao de filho; logo voltamos a esperar */ 
                 continue;
             } else {
                 perror("Unexpected error while waiting for child.");
                 exit (EXIT_FAILURE);
             }
         }
-        vector_pushBack(children, child);
+        TIMER_T end;
+        TIMER_READ(end);
+        for(int i=0; i<size; i++){
+            child = vector_at(children, i);
+            if(child->pid == pid){
+                child->status = status;
+                child->finish=end;
+                return;
+            }
+        }
         return;
     }
-}
+} 
 
-void printChildren(vector_t *children) {
+
+/*====================================================== 
+ * printChildren
+ * ======================================================
+ */
+void printChildren() {
     for (int i = 0; i < vector_getSize(children); ++i) {
         child_t *child = vector_at(children, i);
         int status = child->status;
         pid_t pid = child->pid;
+        TIMER_T start = child->start, finish = child->finish;
         if (pid != -1) {
             const char* ret = "NOK";
             if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
                 ret = "OK";
             }
-            printf("CHILD EXITED: (PID=%d; return %s)\n", pid, ret);
+            printf("CHILD EXITED: (PID=%d; return %s; %f s)\n", pid, ret, TIMER_DIFF_SECONDS(start, finish));
         }
     }
     puts("END.");
 }
 
+
+/*====================================================== 
+ * sendError
+ * ======================================================
+ */
 void sendError(char *client){
     char msg[] = "Command not supported.\n";
     size_t size = 24;
@@ -85,60 +111,100 @@ void sendError(char *client){
     }
 }
 
-void* handler(int signum){
-    if (signal (SIGCHLD, handler) == SIG_ERR){
-        perror("Erro ao instalar handler");
-    }
-    
-}
 
 /*====================================================== 
- * reads line from pipe and parses.
- * @params: modifiable array containing args, size of array, file descriptor and client info vector
- * @returns: number of arguments read.
- * This function functions similarly to the one defined for reading a line from
- * stdin. All code made for stdin input (from SimpleShell) will still work
+ * handler
  * ======================================================
  */
+static void handler(int sig){
+    pid_t pid;
+    int status;
+    child_t* child;
+    TIMER_T stop;
+    TIMER_READ(stop);
+    int size = vector_getSize(children);
+    while( (pid = waitpid(-1, &status, WNOHANG) ) > 0 ) {
+        runningChildren--;
+        for(int i =0; i<size; i++){
+            child = vector_at(children, i);
+            if(child->pid == pid){
+                child->status = status;
+                child->finish = stop;
+                break;
+            }
+        }
+    }
+    if(pid == -1){
+        if(errno == ECHILD){
+            return;
+        }
+        else{
+            perror("waitpid");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return;
+}
 
+
+/*====================================================== 
+ * readFdsArguments
+ * ======================================================
+ */
 int readFdsArguments(char **argVector, int vectorSize, int fds, char* client){
-  int numTokens = 0, n;
-  char *s = " \r\n\t", buffer[BUFFER_SIZE+1];
+    int numTokens = 0, n;
+    char *s = " \r\n\t", buffer[BUFFER_SIZE+1];
+    memset(buffer, '\0', BUFFER_SIZE+1);
+    fd_set mask;
+    FD_ZERO(&mask);
+    FD_SET(fds, &mask);
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec=0;
 
-  int i;
+    int i;
 
-  char *token;
+    char *token;
 
-  if (argVector == NULL ||  vectorSize <= 0 )
-     return 0;
+    if (argVector == NULL ||  vectorSize <= 0 ){
+        return 0;  
+    }
+    int offset=0;
+    while( select(fds+1, &mask, NULL, NULL, &timeout)){
+        if ( (n =read(fds, buffer + offset, BUFFER_SIZE-offset) ) < 1) { //advance pointer and decrement size;
+            if(n == -1 && errno == EINTR){
+                continue;
+            }
+            return n;
+        }
+        offset+=n;
+        FD_ZERO(&mask);
+        FD_SET(fds, &mask);
+    }
 
-  if ( (n =read(fds, buffer, BUFFER_SIZE) ) < 1) {
-    return n;
-  }
 
+    /* get the first token */
+    token = strtok(buffer, s);
 
-  /* get the first token */
-  token = strtok(buffer, s);
+    /* walk through other tokens */
+    while( numTokens < vectorSize-1 && token != NULL ) {
+        argVector[numTokens] = token;
+        numTokens ++;
 
-  /* walk through other tokens */
-  while( numTokens < vectorSize-1 && token != NULL ) {
-    argVector[numTokens] = token;
-    numTokens ++;
+        token = strtok(NULL, s);
+    }
 
-    token = strtok(NULL, s);
-  }
+    for (i = numTokens; i<vectorSize; i++) {  
+        argVector[i] = NULL;
+    }
 
-  for (i = numTokens; i<vectorSize; i++) {  
-    argVector[i] = NULL;
-  }
+    strcpy(client,argVector[0]);
 
-  strcpy(client,argVector[0]);
+    for(i=0; i<vectorSize-1; i++){
+        argVector[i] = argVector[i+1];
+    }
 
-  for(i=0; i<vectorSize-1; i++){
-    argVector[i] = argVector[i+1];
-  }
-
-  return numTokens - 1;
+    return numTokens - 1;
 }
 
 int main (int argc, char** argv) {
@@ -146,12 +212,26 @@ int main (int argc, char** argv) {
     char *args[MAXARGS + 1], *path;
     char buffer[BUFFER_SIZE];
     int MAXCHILDREN = -1;
-    vector_t *children;
-    char currClient[BUFFER_SIZE];
-    int runningChildren = 0;
+    char *currClient = (char*)malloc(BUFFER_SIZE * sizeof(char));
+    if(!currClient){
+        perror("Malloc error");
+        exit(EXIT_FAILURE);
+    }
     int pipe_ds;
     fd_set mask;
     bool_t commandline;
+    struct timespec sleeper;
+    sleeper.tv_sec=0;
+    sleeper.tv_nsec =1000;
+
+    struct sigaction action;
+    memset (&action, '\0', sizeof(action));
+    action.sa_handler = &handler;
+    action.sa_flags = SA_RESTART| SA_NOCLDSTOP;
+    if (sigaction(SIGCHLD, &action, NULL) < 0) {
+		perror ("sigaction");
+		return 1;
+	}
 
     if(argv[1] != NULL){
         MAXCHILDREN = atoi(argv[1]);
@@ -169,7 +249,7 @@ int main (int argc, char** argv) {
     }
     strcpy(path, argv[0]);
     strcat(path, ".pipe");
-    mkfifo(path, 0666);
+    mkfifo(path, 0777);
     pipe_ds = open(path, O_RDWR);
     if (pipe_ds < 0){
         perror("Error opening pipe\n");
@@ -177,12 +257,18 @@ int main (int argc, char** argv) {
     FD_ZERO(&mask);
     FD_SET(pipe_ds, &mask);
     FD_SET(STDIN_FILENO, &mask);
-
+ 
     while (1) {
-        int numArgs, n;
+        int numArgs;
         fd_set tempmask = mask;
 
-        n = select(pipe_ds+1, &tempmask, 0, 0, NULL);
+        while ( select(pipe_ds+1, &tempmask, 0, 0, NULL) < 0){
+            if(errno == EINTR){
+                continue;
+            }
+            perror("select");
+            exit(EXIT_FAILURE);
+        }
 
         if( FD_ISSET(pipe_ds, &tempmask)){
             numArgs = readFdsArguments(args, MAXARGS+1, pipe_ds, currClient);
@@ -204,11 +290,13 @@ int main (int argc, char** argv) {
 
             /* Espera pela terminacao de cada filho */
             while (runningChildren > 0) {
-                waitForChild(children);
-                runningChildren --;
+                nanosleep(&sleeper, NULL);
             }
 
-            printChildren(children);
+            printChildren();
+            unlink(path);
+            free(path);
+            free(currClient);
             printf("--\nCircuitRouter-SimpleShell ended.\n");
             break;
         }
@@ -224,24 +312,33 @@ int main (int argc, char** argv) {
                 }
                 continue;
             }
-            if (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
-                waitForChild(children);
-                runningChildren--;
+            while (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
+                nanosleep(&sleeper, NULL);
             }
 
-            pid = fork();
+           pid = fork();
             if (pid < 0) {
                 perror("Failed to create new process.");
+                unlink(path);
                 exit(EXIT_FAILURE);
             }
 
             if (pid > 0) {
                 runningChildren++;
+                child_t* child = (child_t*)malloc(sizeof(child_t));
+                if(!child){
+                    perror("Error allocating memory");
+                    exit(EXIT_FAILURE);
+                }
+                child->pid = pid;
+                TIMER_READ (child->start);
+                vector_pushBack(children, child);
                 printf("%s: background child started with PID %d.\n\n", COMMAND_RUN, pid);
                 continue;
             } else {
                 char seqsolver[] = "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver";
-                char *newArgs[4] = {seqsolver, args[1], currClient, NULL};
+                char *output = (commandline? NULL : currClient);
+                char *newArgs[4] = {seqsolver, args[1], output, NULL};
 
                 execv(seqsolver, newArgs);
                 perror("Error while executing child process"); // Nao deveria chegar aqui
@@ -268,6 +365,7 @@ int main (int argc, char** argv) {
         free(vector_at(children, i));
     }
     vector_free(children);
+
 
     return EXIT_SUCCESS;
 }

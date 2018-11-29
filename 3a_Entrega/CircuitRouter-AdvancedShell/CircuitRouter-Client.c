@@ -12,6 +12,12 @@
 void sendMsg(int wfd, char* new_path){
     int commandSize, bufferSize;
     char buff[MAXLINHA + 1], msg[2*MAXLINHA];
+    fd_set mask;
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec=0;
+    int diff;
+
     
     while(1){
 
@@ -26,12 +32,20 @@ void sendMsg(int wfd, char* new_path){
         memset(buff, 0, bufferSize);
         
         int read_ds = open(new_path, O_RDONLY);
-        if(!strcmp("",new_path) || read_ds < 0){
-            perror("Error creating pipe");
+        if(read_ds < 0){
+            perror("Error opening pipe");
             exit(EXIT_FAILURE);
         }
 
-        bufferSize = read(read_ds, buff, MAXLINHA+1);
+        FD_SET(read_ds, &mask);
+        diff=0;
+        bufferSize=0;
+        do {
+            diff= read(read_ds, buff + diff, MAXLINHA+1 - diff);
+            bufferSize+=diff;
+            FD_SET(read_ds, &mask);
+        }
+        while( select(read_ds+1, &mask, NULL, NULL, &timeout) && diff);
         
         printf("%s\n", buff);
         memset(buff, 0, bufferSize);
@@ -52,8 +66,12 @@ int main(int argc, char** argv){
         strcpy(path, "clientXXXXXX");
 
         new_path = mktemp(path);
+        if( !strcmp("", new_path)){
+            perror("Error generating filename");
+            exit(EXIT_FAILURE);
+        }
         
-        mkfifo(new_path, 0666);
+        mkfifo(new_path, 0777);
 
         sendMsg(write_ds, new_path);
     }
