@@ -155,7 +155,7 @@ static void handler(int sig){
 int readFdsArguments(char **argVector, int vectorSize, int fds, char* client){
     int numTokens = 0, n;
     char *s = " \r\n\t", buffer[BUFFER_SIZE+1];
-    memset(buffer, '\0', BUFFER_SIZE+1);
+    memset(buffer, 0, BUFFER_SIZE+1);
     fd_set mask;
     FD_ZERO(&mask);
     FD_SET(fds, &mask);
@@ -231,7 +231,7 @@ int main (int argc, char** argv) {
     sleeper.tv_nsec =1000;
 
     struct sigaction sa;
-    memset (&sa, '\0', sizeof(sa));
+    memset (&sa, 0, sizeof(sa));
     sa.sa_handler = &handler;
     sa.sa_flags = SA_RESTART| SA_NOCLDSTOP;
     if (sigaction(SIGCHLD, &sa, NULL) < 0) {
@@ -245,7 +245,6 @@ int main (int argc, char** argv) {
 
     children = vector_alloc(MAXCHILDREN);
 
-
     printf("Welcome to CircuitRouter-AdvancedShell\n\n");
 
     path = (char*)malloc( (strlen(argv[0]) + 6) *sizeof(char) );
@@ -253,8 +252,7 @@ int main (int argc, char** argv) {
         perror("Error allocating memory\n");
         exit(EXIT_FAILURE);
     }
-    strcat(path,"/tmp/");
-    strcat(path, basename(argv[0]));
+    strcpy(path, argv[0]);
     strcat(path, ".pipe");
     mkfifo(path, 0777);
     pipe_ds = open(path, O_RDWR);

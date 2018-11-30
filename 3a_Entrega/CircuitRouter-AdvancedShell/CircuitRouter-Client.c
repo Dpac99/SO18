@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
-#include "../lib/commandlinereader.h"
 #include <errno.h>
 #include <signal.h>
 
@@ -13,6 +12,11 @@
 
 char *global_path;
 
+
+/* Para finalizar o cliente depois de fechar a shell, basta clicar enter
+ * No write ocorre um SIGPIPE e este handler imprime uma mensagem de informacao e 
+ * faz unlink do pipe do cliente. Terminar com Ctrl-C ou Ctrl-D nao garante o unlink.
+ */
 void sigpipe_handler(int sig){
     printf("Pipe has been closed. Program will exit\n");
     unlink(global_path);
@@ -57,17 +61,19 @@ void sendMsg(int wfd, char* new_path){
         do {
             diff= read(read_ds, buff + diff, MAXLINHA+1 - diff);
             bufferSize+=diff;
+            FD_ZERO(&mask);
             FD_SET(read_ds, &mask);
         }
         while( select(read_ds+1, &mask, NULL, NULL, &timeout) && diff);
         
         printf("%s\n", buff);
+        close(read_ds);
         memset(buff, 0, bufferSize);
         memset(msg, 0,commandSize);
 
     }
+    unlink(new_path);
 }
-
 
 int main(int argc, char** argv){
     if(argc ==2 ){
